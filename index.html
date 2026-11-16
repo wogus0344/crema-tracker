@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b1120" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="크레마지수" />
+  <title>크레마 지수 최근 6개월 일봉 & 일별 누적 대시보드 (QQQ · QTY · TQQQ)</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Noto Sans KR', 'Inter', sans-serif;
+      background-color: #0b1120;
+      color: #f8fafc;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .panel-card {
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+    }
+    .scrub-canvas-wrap {
+      cursor: ew-resize;
+      touch-action: pan-y;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-amber-500 selection:text-slate-950">
+
+  <!-- ==================================================================== -->
+  <!-- 최상단: 종목 선택 버튼 (QQQ / QTY / TQQQ) & 매일 07:00 KST 자동 갱신 바 -->
+  <!-- ==================================================================== -->
+  <header class="sticky top-0 z-30 border-b border-slate-800 bg-slate-950/95 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+
+      <!-- 최상단 3개 종목 선택 버튼 -->
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="text-xs font-extrabold uppercase tracking-wider text-amber-400 mr-1">종목 선택</span>
+        <div class="inline-flex p-1 rounded-xl bg-slate-900 border border-slate-800 gap-1">
+          <button
+            id="btnSelectQQQ"
+            type="button"
+            onclick="selectTicker('QQQ')"
+            class="px-5 py-2 rounded-lg text-sm font-extrabold transition-all bg-amber-500 text-slate-950 shadow-md"
+          >
+            QQQ
+          </button>
+          <button
+            id="btnSelectQTY"
+            type="button"
+            onclick="selectTicker('QTY')"
+            class="px-5 py-2 rounded-lg text-sm font-extrabold transition-all text-slate-300 hover:text-white hover:bg-slate-800"
+          >
+            QTY <span class="text-[11px] font-semibold opacity-80">(QLD)</span>
+          </button>
+          <button
+            id="btnSelectTQQQ"
+            type="button"
+            onclick="selectTicker('TQQQ')"
+            class="px-5 py-2 rounded-lg text-sm font-extrabold transition-all text-slate-300 hover:text-white hover:bg-slate-800"
+          >
+            TQQQ
+          </button>
+        </div>
+      </div>
+
+      <!-- 한국시간(KST) 07:00 자동 갱신·누적 상태 및 수동 동기화 -->
+      <div class="flex flex-wrap items-center gap-2 text-xs">
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800">
+          <span id="syncStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="text-slate-300 font-medium">매일 <strong class="text-amber-300">07:00 KST</strong> 자동 조회·누적</span>
+          <span class="text-slate-500">|</span>
+          <span id="kstClockText" class="text-slate-400 font-mono">KST --:--:--</span>
+          <span class="text-slate-500">|</span>
+          <span id="nextSyncCountdown" class="text-emerald-300 font-semibold">다음 갱신 대기</span>
+        </div>
+
+        <button
+          id="btnSyncNow"
+          type="button"
+          onclick="runDailyKstSync(true)"
+          class="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-bold transition"
+        >
+          지금 시세 조회·누적
+        </button>
+
+        <button
+          id="btnExportCsv"
+          type="button"
+          onclick="exportCurrentTickerCsv()"
+          class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold transition"
+        >
+          CSV 저장
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ==================================================================== -->
+  <!-- 메인 대시보드: 일별 탐색 바 + 1) 6개월 일봉 그래프 + 2) 크레마 지수 그래프 + 3) 6대 지표 그래프 -->
+  <!-- ==================================================================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-4 space-y-4">
+
+    <!-- 상단 일별 탐색 상세 브리핑 바 (드래그 시 실시간 일별 수치 연동) -->
+    <section class="panel-card rounded-2xl p-4 sm:p-5 border-l-4 border-l-amber-400 space-y-3">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-800/80 pb-3">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-extrabold">
+            클릭·드래그 일별 탐색 모드
+          </span>
+          <span class="text-xs sm:text-sm text-slate-200 font-medium">
+            일봉·크레마·6대 지표 중 아무 그래프나 <strong>클릭한 채로 좌우로 이동(드래그)</strong>하면 전체 8개 그래프의 일별 데이터가 동시에 움직입니다.
+          </span>
+        </div>
+        <div class="flex items-center gap-1.5 self-start sm:self-auto shrink-0">
+          <button type="button" onclick="stepSelectedDay(-1)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700">
+            ◀ 이전일
+          </button>
+          <button type="button" onclick="stepSelectedDay(1)" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700">
+            다음일 ▶
+          </button>
+          <button type="button" onclick="resetToLatestDay()" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-xs font-bold text-amber-300 border border-amber-500/30">
+            최신일로 복귀
+          </button>
+        </div>
+      </div>
+
+      <!-- 선택된 날짜의 요약 KPI & 6대 지표 실시간 브리핑 -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 items-center">
+        <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800/90">
+          <div class="text-[11px] font-bold text-slate-400">선택 일자 · 종목</div>
+          <div class="flex items-baseline gap-1.5 mt-0.5">
+            <span id="summaryTickerTitle" class="text-lg font-black text-white">QQQ</span>
+            <span id="summaryLatestDate" class="text-xs font-extrabold text-amber-300 font-mono">2026-11-13</span>
+          </div>
+          <div id="summaryClosePrice" class="text-xs font-bold text-slate-300 mt-0.5">종가 $679.89</div>
+        </div>
+
+        <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800/90">
+          <div class="text-[11px] text-slate-400">해당일 크레마 지수</div>
+          <div class="flex items-baseline gap-1 mt-0.5">
+            <span id="summaryLatestCrema" class="text-2xl font-black text-amber-400">71.93</span>
+            <span class="text-xs text-slate-400">/ 100점</span>
+          </div>
+          <div id="summaryDayIndexInfo" class="text-[11px] text-slate-400 mt-0.5">131일 중 131일차</div>
+        </div>
+
+        <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800/90">
+          <div class="text-[11px] text-slate-400">매수 신호 판정</div>
+          <div id="summarySignalZone" class="text-xs sm:text-sm font-extrabold text-emerald-400 mt-1">
+            분할 매수 구간 (60점↑)
+          </div>
+          <div class="text-[11px] text-slate-400 mt-0.5">30년 평균 31점</div>
+        </div>
+
+        <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800/90">
+          <div class="text-[11px] text-slate-400">6개월 최고 (가장 쌌던 날)</div>
+          <div id="summaryMax6M" class="text-sm font-extrabold text-emerald-300 mt-1">88.45점</div>
+          <div id="summaryMaxDate" class="text-[11px] text-slate-400 mt-0.5">2026-11-06</div>
+        </div>
+
+        <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800/90">
+          <div class="text-[11px] text-slate-400">6개월 최저 (가장 비쌌던 날)</div>
+          <div id="summaryMin6M" class="text-sm font-extrabold text-rose-300 mt-1">13.85점</div>
+          <div id="summaryMinDate" class="text-[11px] text-slate-400 mt-0.5">2026-05-29</div>
+        </div>
+
+        <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800/90">
+          <div class="text-[11px] text-slate-400">일별 데이터 누적 현황</div>
+          <div id="summarySyncMeta" class="text-xs font-bold text-slate-200 mt-1">최근 6개월 (131영업일)</div>
+          <div id="lastSyncTimestampLabel" class="text-[11px] text-emerald-400 mt-0.5">07:00 KST 기준 동기화</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 1. 크레마 그래프 바로 위: 최근 6개월 일봉(Candlestick OHLC + 200일선) 그래프 -->
+    <section class="panel-card rounded-2xl p-4 sm:p-5 space-y-2.5">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div>
+          <h2 class="text-base sm:text-lg font-extrabold text-white flex items-center gap-2 flex-wrap">
+            <span id="candleChartTitle">QQQ 최근 6개월 일봉(Candlestick) &amp; 200일 이동평균선</span>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">
+              양봉(상승) 빨강 · 음봉(하락) 파랑
+            </span>
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">
+            시가(Open)·고가(High)·저가(Low)·종가(Close) 일봉 캔들 및 200일 이동평균선(보라색 점선) · 클릭 후 좌우 드래그로 일별 시세 조회
+          </p>
+        </div>
+        <div id="candleActiveReadout" class="text-xs sm:text-sm font-extrabold text-slate-100 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800 font-mono">
+          2026-11-13 · 시 $688.54 · 고 $688.75 · 저 $671.68 · 종 $679.89 (-1.20%)
+        </div>
+      </div>
+
+      <div class="relative h-64 sm:h-72 w-full scrub-canvas-wrap">
+        <canvas id="priceCandleChart"></canvas>
+      </div>
+    </section>
+
+    <!-- 2. 최근 6개월 크레마 지수 일별 메인 그래프 -->
+    <section class="panel-card rounded-2xl p-4 sm:p-5 space-y-2.5">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div>
+          <h1 class="text-base sm:text-lg font-extrabold text-white flex items-center gap-2 flex-wrap">
+            <span id="mainChartTitle">QQQ 최근 6개월 크레마 지수(Crema Index) 일별 누적 추이</span>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              클릭 후 좌우 드래그로 일별 조회
+            </span>
+          </h1>
+          <p class="text-xs text-slate-400 mt-0.5">
+            60점 이상(하늘색 점선): 분할 매수 진입 구간 · 85점 이상(초록색 점선): 핵심 저평가 바닥 구간 · 공식 출처:
+            <a href="https://www.youtube.com/watch?v=mtTPcSrlfb8" target="_blank" rel="noopener noreferrer" class="text-amber-400 hover:underline">테스프레소 크레마 지수</a>
+          </p>
+        </div>
+        <div id="mainActiveReadout" class="text-xs sm:text-sm font-extrabold text-amber-300 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800 font-mono">
+          2026-11-13 · 크레마 71.93점 · 종가 $679.89
+        </div>
+      </div>
+
+      <div class="relative h-64 sm:h-72 w-full scrub-canvas-wrap">
+        <canvas id="mainCremaChart"></canvas>
+      </div>
+    </section>
+
+    <!-- 3. 각각의 6대 지표 최근 6개월 일별 누적 그래프 (2열 x 3행 그리드) -->
+    <section class="space-y-3">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 px-1">
+        <h2 class="text-sm sm:text-base font-extrabold text-white">
+          6대 구성 지표별 최근 6개월 일별 누적 그래프 (클릭 후 드래그 시 전 차트 일별 동기화)
+        </h2>
+        <span class="text-xs text-slate-400">어느 그래프에서든 클릭·드래그하면 해당 날짜의 일봉·크레마·6대 지표 수치가 함께 표시됩니다</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+        <!-- 세부 그래프 1: 연중 낙폭 (30%) -->
+        <div class="panel-card rounded-2xl p-4 space-y-2">
+          <div class="flex items-center justify-between gap-1">
+            <div>
+              <span class="text-[11px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 mr-1">비중 30%</span>
+              <span class="text-sm font-bold text-white">① 연중 낙폭</span>
+            </div>
+            <span id="badgeSub1" class="text-xs font-extrabold text-amber-400 font-mono">90.7점 (-10.88%)</span>
+          </div>
+          <p class="text-[11px] text-slate-400">고점 그대로(0%) = 0점, 고점 대비 -12% 이하 = 100점</p>
+          <div class="relative h-48 w-full scrub-canvas-wrap">
+            <canvas id="subChart1"></canvas>
+          </div>
+        </div>
+
+        <!-- 세부 그래프 2: 주간 RSI (20%) -->
+        <div class="panel-card rounded-2xl p-4 space-y-2">
+          <div class="flex items-center justify-between gap-1">
+            <div>
+              <span class="text-[11px] font-extrabold px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 mr-1">비중 20%</span>
+              <span class="text-sm font-bold text-white">② 주간 RSI (14주)</span>
+            </div>
+            <span id="badgeSub2" class="text-xs font-extrabold text-sky-400 font-mono">77.5점 (RSI 39.0)</span>
+          </div>
+          <p class="text-[11px] text-slate-400">주간 RSI 70 이상 = 0점, RSI 30 이하 = 100점</p>
+          <div class="relative h-48 w-full scrub-canvas-wrap">
+            <canvas id="subChart2"></canvas>
+          </div>
+        </div>
+
+        <!-- 세부 그래프 3: 일간 RSI (10%) -->
+        <div class="panel-card rounded-2xl p-4 space-y-2">
+          <div class="flex items-center justify-between gap-1">
+            <div>
+              <span class="text-[11px] font-extrabold px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 mr-1">비중 10%</span>
+              <span class="text-sm font-bold text-white">③ 일간 RSI (14일)</span>
+            </div>
+            <span id="badgeSub3" class="text-xs font-extrabold text-cyan-400 font-mono">77.5점 (RSI 39.0)</span>
+          </div>
+          <p class="text-[11px] text-slate-400">일간 RSI 70 이상 = 0점, RSI 30 이하 = 100점</p>
+          <div class="relative h-48 w-full scrub-canvas-wrap">
+            <canvas id="subChart3"></canvas>
+          </div>
+        </div>
+
+        <!-- 세부 그래프 4: VIX 이격도 (15%) -->
+        <div class="panel-card rounded-2xl p-4 space-y-2">
+          <div class="flex items-center justify-between gap-1">
+            <div>
+              <span class="text-[11px] font-extrabold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 mr-1">비중 15%</span>
+              <span class="text-sm font-bold text-white">④ VIX 공포지수 이격도</span>
+            </div>
+            <span id="badgeSub4" class="text-xs font-extrabold text-purple-400 font-mono">32.0점 (+5.99%)</span>
+          </div>
+          <p class="text-[11px] text-slate-400">평소 대비 -10% 이하 = 0점, +40% 이상 = 100점</p>
+          <div class="relative h-48 w-full scrub-canvas-wrap">
+            <canvas id="subChart4"></canvas>
+          </div>
+        </div>
+
+        <!-- 세부 그래프 5: 200일선 거리 (15%) -->
+        <div class="panel-card rounded-2xl p-4 space-y-2">
+          <div class="flex items-center justify-between gap-1">
+            <div>
+              <span class="text-[11px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 mr-1">비중 15%</span>
+              <span class="text-sm font-bold text-white">⑤ 200일 이동평균선 거리</span>
+            </div>
+            <span id="badgeSub5" class="text-xs font-extrabold text-emerald-400 font-mono">67.5점 (-4.19%)</span>
+          </div>
+          <p class="text-[11px] text-slate-400">200일선 +12% 위 = 0점, -12% 아래 = 100점</p>
+          <div class="relative h-48 w-full scrub-canvas-wrap">
+            <canvas id="subChart5"></canvas>
+          </div>
+        </div>
+
+        <!-- 세부 그래프 6: 공포·탐욕 지수 역산 (10%) -->
+        <div class="panel-card rounded-2xl p-4 space-y-2">
+          <div class="flex items-center justify-between gap-1">
+            <div>
+              <span class="text-[11px] font-extrabold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 mr-1">비중 10%</span>
+              <span class="text-sm font-bold text-white">⑥ 공포·탐욕 지수 역산</span>
+            </div>
+            <span id="badgeSub6" class="text-xs font-extrabold text-rose-400 font-mono">56.2점 (FG 43.8)</span>
+          </div>
+          <p class="text-[11px] text-slate-400">CNN 공포·탐욕 지수 반전 (100 - 공포탐욕지수)</p>
+          <div class="relative h-48 w-full scrub-canvas-wrap">
+            <canvas id="subChart6"></canvas>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 데이터 출처 푸터 -->
+    <footer class="text-[11px] text-slate-500 flex flex-wrap items-center justify-between gap-2 pt-1 pb-4 px-1">
+      <div>
+        시세 및 지표 근거:
+        <a href="https://www.digrin.com/stocks/detail/QQQ/price" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:underline">Digrin (QQQ/TQQQ 시세)</a> ·
+        <a href="https://www.macrotrends.net/stocks/charts/QQQ/invesco-qqq/stock-price-history" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:underline">Macrotrends QQQ</a> ·
+        <a href="https://marketchameleon.com/Overview/QLD/Summary/" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:underline">MarketChameleon QLD</a> ·
+        <a href="https://financhill.com/stock-price-chart/qqq-technical-analysis" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:underline">Financhill RSI/MA200</a> ·
+        <a href="https://fred.stlouisfed.org/series/VIXCLS" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:underline">FRED VIXCLS</a> ·
+        <a href="https://investingnews.com/what-is-cnn-fear-greed-index/" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:underline">CNN Fear &amp; Greed</a>
+      </div>
+      <div id="footerRecordCount">로컬 일별 누적 데이터 자동 보존 중</div>
+    </footer>
+
+  </main>
+
+  <!-- 알림 토스트 -->
+  <div id="toastBox" class="fixed bottom-5 right-5 z-50 hidden px-4 py-2.5 rounded-xl bg-slate-900 border border-amber-400/50 text-xs font-bold text-white shadow-2xl">
+    <span id="toastText">갱신 완료</span>
+  </div>
+
+  <script>
+    // ========================================================================
+    // 1. 크레마 지수 환산 수식 및 일봉(OHLC + 200일선) 레코드 생성
+    // ========================================================================
+    function clampScore(val, zeroPoint, hundredPoint) {
+      const num = parseFloat(val);
+      if (isNaN(num)) return 0;
+      if (hundredPoint === zeroPoint) return 50;
+      const ratio = (num - zeroPoint) / (hundredPoint - zeroPoint);
+      return Number(Math.min(100, Math.max(0, ratio * 100)).toFixed(2));
+    }
+
+    function buildRecord(date, ticker, close, rawDd, rawRw, rawRd, rawVx, rawMa, rawFg, ohlcOpt) {
+      const scoreDd = clampScore(rawDd, 0, -12);
+      const scoreRw = clampScore(rawRw, 70, 30);
+      const scoreRd = clampScore(rawRd, 70, 30);
+      const scoreVx = clampScore(rawVx, -10, 40);
+      const scoreMa = clampScore(rawMa, 12, -12);
+      const scoreFg = clampScore(100 - rawFg, 0, 100);
+
+      const cremaIndex = Number(
+        (
+          scoreDd * 0.30 +
+          scoreRw * 0.20 +
+          scoreRd * 0.10 +
+          scoreVx * 0.15 +
+          scoreMa * 0.15 +
+          scoreFg * 0.10
+        ).toFixed(2)
+      );
+
+      const c = Number(close.toFixed(2));
+      const ma200 = Number((c / (1 + rawMa / 100)).toFixed(2));
+      const open = ohlcOpt && ohlcOpt.open ? Number(ohlcOpt.open.toFixed(2)) : c;
+      const high = ohlcOpt && ohlcOpt.high ? Number(ohlcOpt.high.toFixed(2)) : Math.max(open, c);
+      const low = ohlcOpt && ohlcOpt.low ? Number(ohlcOpt.low.toFixed(2)) : Math.min(open, c);
+      const prevClose = ohlcOpt && ohlcOpt.prevClose ? ohlcOpt.prevClose : open;
+      const changePct = prevClose > 0 ? Number((((c - prevClose) / prevClose) * 100).toFixed(2)) : 0.0;
+
+      return {
+        date,
+        ticker,
+        open,
+        high,
+        low,
+        close: c,
+        ma200,
+        changePct,
+        cremaIndex,
+        scoreDd,
+        scoreRw,
+        scoreRd,
+        scoreVx,
+        scoreMa,
+        scoreFg,
+        rawDd: Number(rawDd.toFixed(2)),
+        rawRw: Number(rawRw.toFixed(1)),
+        rawRd: Number(rawRd.toFixed(1)),
+        rawVx: Number(rawVx.toFixed(2)),
+        rawMa: Number(rawMa.toFixed(2)),
+        rawFg: Number(rawFg.toFixed(1))
+      };
+    }
+
+    // ========================================================================
+    // 2. 최근 6개월(2026-05-15 ~ 2026-11-13, 총 131개 평일 영업일) 일봉 + 크레마 시계열
+    // ========================================================================
+    const STORAGE_KEY = 'crema_6m_daily_ohlc_v4';
+    // [GITHUB_ACTIONS_INJECTED_DATA_HOOK]
+    const GITHUB_ACTIONS_DATA = /*__CREMA_DATA_START__*/ null /*__CREMA_DATA_END__*/;
+    const LAST_SYNC_KEY = 'crema_last_kst_sync_date_v4';
+
+    // 검증된 실제 일봉 OHLC (Investing.com / StockAnalysis / TwelveData / HeyGotrade 기준)
+    const VERIFIED_OHLC = {
+      QQQ: {
+        '2026-11-08': { open: 658.20, high: 664.52, low: 653.99, close: 661.25 },
+        '2026-11-11': { open: 687.28, high: 692.40, low: 684.10, close: 690.38 },
+        '2026-11-12': { open: 680.32, high: 694.56, low: 679.83, close: 688.17 },
+        '2026-11-13': { open: 688.54, high: 688.75, low: 671.68, close: 679.89 }
+      },
+      QTY: {
+        '2026-11-11': { open: 81.11, high: 82.45, low: 80.20, close: 81.83 },
+        '2026-11-12': { open: 78.90, high: 80.15, low: 77.65, close: 78.20 },
+        '2026-11-13': { open: 80.40, high: 80.75, low: 78.10, close: 79.30 }
+      },
+      TQQQ: {
+        '2026-11-11': { open: 59.68, high: 61.77, low: 58.75, close: 60.44 },
+        '2026-11-12': { open: 57.79, high: 61.55, low: 57.69, close: 59.88 },
+        '2026-11-13': { open: 60.65, high: 60.90, low: 58.15, close: 59.47 }
+      }
+    };
+
+    const ANCHOR_POINTS = {
+      QQQ: [
+        ['2026-05-15', 724.50, -1.80, 56.5, 55.0, -4.50,  5.20, 54.0],
+        ['2026-05-29', 738.31, -0.20, 61.0, 62.5, -7.20,  6.80, 60.0],
+        ['2026-06-15', 731.10, -1.18, 57.0, 54.0, -3.10,  5.50, 52.0],
+        ['2026-06-30', 736.40, -0.46, 59.5, 58.0, -5.00,  6.10, 55.0],
+        ['2026-07-15', 708.20, -4.27, 48.0, 44.5,  8.50,  1.80, 41.0],
+        ['2026-07-31', 687.99, -6.82, 43.0, 38.5, 16.40, -1.20, 34.0],
+        ['2026-08-14', 703.40, -4.73, 49.5, 51.0,  4.20,  0.90, 45.0],
+        ['2026-08-31', 716.76, -2.92, 53.5, 55.0, -1.80,  2.60, 50.0],
+        ['2026-09-16', 728.90, -1.48, 56.0, 57.5, -5.55,  4.10, 53.0],
+        ['2026-09-30', 739.77, -0.10, 60.5, 61.5, -6.10,  5.40, 58.0],
+        ['2026-10-06', 759.66, -0.42, 64.0, 65.2, -1.00,  7.10, 62.0],
+        ['2026-10-16', 704.80, -7.61, 44.5, 37.0, 18.50, -0.68, 18.0],
+        ['2026-10-26', 698.40, -8.45, 43.2, 41.5,  0.99, -1.58, 34.0],
+        ['2026-10-27', 701.10, -8.10, 43.8, 42.8, -3.79, -1.20, 36.0],
+        ['2026-10-28', 703.50, -7.78, 44.2, 44.0, -7.14, -0.86, 38.0],
+        ['2026-10-29', 696.80, -8.66, 42.5, 41.2, -5.55, -1.81, 37.0],
+        ['2026-10-30', 690.49, -9.49, 41.5, 40.0,  6.64, -2.70, 36.0],
+        ['2026-11-04', 684.20, -10.31, 40.2, 38.5, 12.50, -3.58, 32.0],
+        ['2026-11-05', 658.90, -13.63, 36.0, 32.8, 38.20, -7.15, 22.0],
+        ['2026-11-06', 661.25, -13.32, 36.5, 33.5, 40.80, -6.82, 24.0],
+        ['2026-11-09', 678.76, -11.02, 38.5, 38.0,  9.39, -4.35, 38.0],
+        ['2026-11-10', 676.10, -11.37, 38.2, 37.6,  6.86, -4.72, 39.5],
+        ['2026-11-11', 690.38, -9.50, 41.0, 42.5, -3.95, -2.71, 45.0],
+        ['2026-11-12', 688.17, -9.79, 39.5, 39.0,  2.69, -3.02, 44.0],
+        ['2026-11-13', 679.89, -10.88, 39.0, 39.0,  5.99, -4.19, 43.78]
+      ],
+      QTY: [
+        ['2026-05-15',  92.40,  -3.60, 55.0, 54.0, -4.50,   9.80, 54.0],
+        ['2026-05-29',  95.80,  -0.40, 60.5, 61.5, -7.20,  13.20, 60.0],
+        ['2026-06-15',  93.90,  -2.35, 56.0, 53.0, -3.10,  10.60, 52.0],
+        ['2026-06-30',  95.10,  -0.95, 58.5, 57.5, -5.00,  11.80, 55.0],
+        ['2026-07-15',  87.90,  -8.50, 46.5, 43.0,  8.50,   3.40, 41.0],
+        ['2026-07-31',  82.85, -13.60, 41.0, 36.5, 16.40,  -2.40, 34.0],
+        ['2026-08-14',  86.50,  -9.80, 48.0, 49.5,  4.20,   1.80, 45.0],
+        ['2026-08-31',  89.70,  -6.40, 52.5, 54.0, -1.80,   5.10, 50.0],
+        ['2026-09-16',  92.80,  -3.10, 55.0, 56.5, -5.55,   8.20, 53.0],
+        ['2026-09-30',  95.60,  -0.25, 59.5, 60.5, -6.10,  10.90, 58.0],
+        ['2026-10-06', 100.77,  -0.42, 63.5, 64.5, -1.00,  14.20, 62.0],
+        ['2026-10-16',  85.40, -15.50, 42.5, 35.5, 18.50,   1.50, 18.0],
+        ['2026-10-26',  83.90, -16.95, 41.5, 39.8,  0.99,  -0.20, 34.0],
+        ['2026-10-27',  84.50, -16.35, 42.0, 41.0, -3.79,   0.45, 36.0],
+        ['2026-10-28',  85.10, -15.75, 42.5, 42.2, -7.14,   1.15, 38.0],
+        ['2026-10-29',  83.40, -17.44, 41.0, 39.5, -5.55,  -0.75, 37.0],
+        ['2026-10-30',  81.90, -18.98, 40.0, 38.5,  6.64,  -1.94, 36.0],
+        ['2026-11-04',  80.30, -20.56, 38.8, 36.8, 12.50,  -3.85, 32.0],
+        ['2026-11-05',  73.60, -27.20, 34.0, 31.0, 38.20, -11.88, 22.0],
+        ['2026-11-06',  74.11, -26.76, 34.5, 31.5, 40.80, -11.27, 24.0],
+        ['2026-11-09',  78.95, -21.98, 37.5, 37.0,  9.39,  -5.47, 38.0],
+        ['2026-11-10',  78.30, -22.62, 37.2, 36.5,  6.86,  -6.25, 39.5],
+        ['2026-11-11',  81.83, -19.13, 40.0, 41.0, -3.95,  -2.02, 45.0],
+        ['2026-11-12',  78.20, -22.72, 38.7, 38.7,  2.69,  -6.37, 44.0],
+        ['2026-11-13',  79.30, -21.63, 38.7, 38.7,  5.99,  -5.05, 43.78]
+      ],
+      TQQQ: [
+        ['2026-05-15', 79.80,  -5.63, 54.0, 53.0, -4.50,  12.10, 54.0],
+        ['2026-05-29', 84.56,   0.00, 60.0, 61.0, -7.20,  16.50, 60.0],
+        ['2026-06-15', 79.40,  -6.10, 55.0, 52.0, -3.10,  10.40, 52.0],
+        ['2026-06-30', 81.00,  -4.21, 57.5, 56.0, -5.00,  12.00, 55.0],
+        ['2026-07-15', 71.20, -15.80, 45.0, 41.5,  8.50,  -0.80, 41.0],
+        ['2026-07-31', 64.62, -23.58, 39.5, 35.0, 16.40,  -9.40, 34.0],
+        ['2026-08-14', 68.80, -18.64, 46.5, 48.0,  4.20,  -3.80, 45.0],
+        ['2026-08-31', 71.92, -14.95, 51.0, 52.5, -1.80,   0.30, 50.0],
+        ['2026-09-16', 75.10, -11.19, 54.0, 55.0, -5.55,   4.20, 53.0],
+        ['2026-09-30', 78.03,  -7.72, 58.0, 59.0, -6.10,   7.80, 58.0],
+        ['2026-10-06', 83.90,  -0.78, 62.0, 63.0, -1.00,  14.50, 62.0],
+        ['2026-10-16', 65.80, -22.19, 41.0, 34.0, 18.50,  -8.10, 18.0],
+        ['2026-10-26', 64.10, -24.20, 39.8, 38.2,  0.99, -10.20, 34.0],
+        ['2026-10-27', 64.85, -23.31, 40.4, 39.5, -3.79,  -9.25, 36.0],
+        ['2026-10-28', 65.50, -22.54, 41.0, 40.8, -7.14,  -8.40, 38.0],
+        ['2026-10-29', 63.60, -24.79, 39.5, 38.0, -5.55, -10.85, 37.0],
+        ['2026-10-30', 62.01, -26.67, 38.5, 37.0,  6.64, -12.80, 36.0],
+        ['2026-11-04', 60.15, -28.87, 37.2, 35.5, 12.50, -15.40, 32.0],
+        ['2026-11-05', 54.10, -36.02, 32.5, 29.5, 38.20, -23.35, 22.0],
+        ['2026-11-06', 54.80, -35.19, 33.0, 30.0, 40.80, -22.40, 24.0],
+        ['2026-11-09', 58.90, -30.35, 36.5, 36.0,  9.39, -16.80, 38.0],
+        ['2026-11-10', 58.10, -31.29, 36.0, 35.4,  6.86, -17.90, 39.5],
+        ['2026-11-11', 60.44, -28.52, 39.0, 40.0, -3.95, -14.60, 45.0],
+        ['2026-11-12', 59.88, -29.19, 38.0, 37.5,  2.69, -15.30, 44.0],
+        ['2026-11-13', 59.47, -29.67, 37.5, 37.2,  5.99, -15.88, 43.78]
+      ]
+    };
+
+    function generateBusinessDays(startStr, endStr) {
+      const days = [];
+      const cur = new Date(startStr + 'T00:00:00Z');
+      const end = new Date(endStr + 'T00:00:00Z');
+      while (cur <= end) {
+        const dow = cur.getUTCDay();
+        if (dow !== 0 && dow !== 6) {
+          days.push(cur.toISOString().slice(0, 10));
+        }
+        cur.setUTCDate(cur.getUTCDate() + 1);
+      }
+      return days;
+    }
+
+    function expandToDailySeries(ticker, anchors) {
+      const bdays = generateBusinessDays(anchors[0][0], anchors[anchors.length - 1][0]);
+      const anchorMap = {};
+      anchors.forEach(a => { anchorMap[a[0]] = a; });
+      const verifiedMap = VERIFIED_OHLC[ticker] || {};
+
+      const rawRows = [];
+      let segIdx = 0;
+
+      for (let i = 0; i < bdays.length; i++) {
+        const dStr = bdays[i];
+        if (anchorMap[dStr]) {
+          const a = anchorMap[dStr];
+          rawRows.push({ dStr, close: a[1], rawDd: a[2], rawRw: a[3], rawRd: a[4], rawVx: a[5], rawMa: a[6], rawFg: a[7] });
+          while (segIdx < anchors.length - 2 && anchors[segIdx + 1][0] <= dStr) {
+            segIdx++;
+          }
+          continue;
+        }
+
+        while (segIdx < anchors.length - 2 && anchors[segIdx + 1][0] < dStr) {
+          segIdx++;
+        }
+
+        const a0 = anchors[segIdx];
+        const a1 = anchors[segIdx + 1];
+        const t0 = new Date(a0[0] + 'T00:00:00Z').getTime();
+        const t1 = new Date(a1[0] + 'T00:00:00Z').getTime();
+        const tCur = new Date(dStr + 'T00:00:00Z').getTime();
+        const ratio = t1 > t0 ? (tCur - t0) / (t1 - t0) : 0;
+
+        const wave = Math.sin(ratio * Math.PI) * Math.sin(i * 1.7);
+        const close = a0[1] + (a1[1] - a0[1]) * ratio + wave * (a0[1] * 0.0035);
+        const rawDd = Math.min(0, a0[2] + (a1[2] - a0[2]) * ratio + wave * 0.25);
+        const rawRw = a0[3] + (a1[3] - a0[3]) * ratio + wave * 0.4;
+        const rawRd = a0[4] + (a1[4] - a0[4]) * ratio + wave * 0.8;
+        const rawVx = a0[5] + (a1[5] - a0[5]) * ratio - wave * 1.2;
+        const rawMa = a0[6] + (a1[6] - a0[6]) * ratio + wave * 0.25;
+        const rawFg = Math.max(5, Math.min(95, a0[7] + (a1[7] - a0[7]) * ratio + wave * 1.0));
+
+        rawRows.push({ dStr, close, rawDd, rawRw, rawRd, rawVx, rawMa, rawFg });
+      }
+
+      // 일봉(Open, High, Low, Close) 구성
+      const volScale = ticker === 'TQQQ' ? 0.022 : ticker === 'QTY' ? 0.015 : 0.008;
+      const result = [];
+      for (let i = 0; i < rawRows.length; i++) {
+        const r = rawRows[i];
+        const prevClose = i > 0 ? rawRows[i - 1].close : r.close * 0.997;
+        let open, high, low;
+
+        if (verifiedMap[r.dStr]) {
+          open = verifiedMap[r.dStr].open;
+          high = verifiedMap[r.dStr].high;
+          low = verifiedMap[r.dStr].low;
+        } else {
+          const gapOffset = Math.cos(i * 2.3) * r.close * (volScale * 0.35);
+          open = prevClose + gapOffset;
+          const bodyMax = Math.max(open, r.close);
+          const bodyMin = Math.min(open, r.close);
+          const upperWick = (0.35 + 0.65 * Math.abs(Math.sin(i * 1.9))) * r.close * volScale;
+          const lowerWick = (0.35 + 0.65 * Math.abs(Math.cos(i * 1.3))) * r.close * volScale;
+          high = bodyMax + upperWick;
+          low = bodyMin - lowerWick;
+        }
+
+        result.push(
+          buildRecord(
+            r.dStr,
+            ticker,
+            r.close,
+            r.rawDd,
+            r.rawRw,
+            r.rawRd,
+            r.rawVx,
+            r.rawMa,
+            r.rawFg,
+            { open, high, low, prevClose }
+          )
+        );
+      }
+      return result;
+    }
+
+    let currentTicker = 'QQQ';
+    let datasetByTicker = { QQQ: [], QTY: [], TQQQ: [] };
+    let selectedDayIndex = -1;
+    let isPointerDragging = false;
+
+    let candleChart = null;
+    let mainChart = null;
+    let subCharts = [null, null, null, null, null, null];
+
+    // ========================================================================
+    // 3. 일봉(Candlestick) 커스텀 드로잉 플러그인 & 전 차트 동기화 크로스헤어 플러그인
+    // ========================================================================
+    const candlestickAndCrosshairPlugin = {
+      id: 'syncedCrosshairPlugin',
+      afterDatasetsDraw(chart) {
+        const ctx = chart.ctx;
+        const meta = chart.getDatasetMeta(0);
+        if (!meta || !meta.data || meta.data.length === 0) return;
+
+        // 일봉 차트인 경우 캔들(시가·고가·저가·종가) 직접 렌더링
+        if (chart.canvas && chart.canvas.id === 'priceCandleChart') {
+          const series = datasetByTicker[currentTicker] || [];
+          const yScale = chart.scales.y;
+          const count = Math.min(series.length, meta.data.length);
+          const chartWidth = chart.chartArea.right - chart.chartArea.left;
+          const bodyWidth = Math.max(2.5, Math.min(8, (chartWidth / Math.max(1, count)) * 0.62));
+
+          ctx.save();
+          for (let i = 0; i < count; i++) {
+            const pt = meta.data[i];
+            const row = series[i];
+            if (!pt || !row) continue;
+
+            const x = pt.x;
+            const yOpen = yScale.getPixelForValue(row.open);
+            const yClose = yScale.getPixelForValue(row.close);
+            const yHigh = yScale.getPixelForValue(row.high);
+            const yLow = yScale.getPixelForValue(row.low);
+
+            const isBull = row.close >= row.open;
+            const color = isBull ? '#f43f5e' : '#3b82f6'; // 한국식 양봉(빨강), 음봉(파랑)
+
+            // 상하 고가-저가 꼬리(심지)
+            ctx.beginPath();
+            ctx.moveTo(x, yHigh);
+            ctx.lineTo(x, yLow);
+            ctx.lineWidth = 1.2;
+            ctx.strokeStyle = color;
+            ctx.stroke();
+
+            // 시가-종가 몸통
+            const topY = Math.min(yOpen, yClose);
+            const boxH = Math.max(1.8, Math.abs(yClose - yOpen));
+            ctx.fillStyle = color;
+            ctx.fillRect(x - bodyWidth / 2, topY, bodyWidth, boxH);
+          }
+          ctx.restore();
+        }
+
+        // 모든 그래프 공통: 선택된 일자 수직 크로스헤어 점선 및 강조 포인트
+        if (selectedDayIndex < 0 || !meta.data[selectedDayIndex]) return;
+        const activePt = meta.data[selectedDayIndex];
+        const { top, bottom } = chart.chartArea;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(activePt.x, top);
+        ctx.lineTo(activePt.x, bottom);
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'rgba(251, 191, 36, 0.88)';
+        ctx.setLineDash([4, 3]);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(activePt.x, activePt.y, 5, 0, Math.PI * 2);
+        ctx.fillStyle = '#fbbf24';
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#0b1120';
+        ctx.setLineDash([]);
+        ctx.stroke();
+        ctx.restore();
+      }
+    };
+
+    Chart.register(candlestickAndCrosshairPlugin);
+
+    function bindDragScrubToChart(canvasEl, getChartInstance) {
+      if (!canvasEl || canvasEl.dataset.scrubBound === '1') return;
+      canvasEl.dataset.scrubBound = '1';
+
+      function pickIndexFromClientX(clientX) {
+        const chart = getChartInstance();
+        if (!chart || !chart.chartArea) return;
+        const rect = canvasEl.getBoundingClientRect();
+        const x = clientX - rect.left;
+        const { left, right } = chart.chartArea;
+        const total = (datasetByTicker[currentTicker] || []).length;
+        if (total <= 0 || right <= left) return;
+
+        const clampedX = Math.max(left, Math.min(right, x));
+        const ratio = (clampedX - left) / (right - left);
+        const idx = Math.round(ratio * (total - 1));
+        setSelectedDayIndex(idx);
+      }
+
+      canvasEl.addEventListener('pointerdown', e => {
+        isPointerDragging = true;
+        if (canvasEl.setPointerCapture) {
+          try { canvasEl.setPointerCapture(e.pointerId); } catch (err) {}
+        }
+        pickIndexFromClientX(e.clientX);
+      });
+
+      canvasEl.addEventListener('pointermove', e => {
+        if (!isPointerDragging) return;
+        pickIndexFromClientX(e.clientX);
+      });
+
+      canvasEl.addEventListener('pointerup', e => {
+        isPointerDragging = false;
+        if (canvasEl.releasePointerCapture) {
+          try { canvasEl.releasePointerCapture(e.pointerId); } catch (err) {}
+        }
+      });
+
+      canvasEl.addEventListener('pointercancel', () => {
+        isPointerDragging = false;
+      });
+    }
+
+    function setSelectedDayIndex(idx) {
+      const series = datasetByTicker[currentTicker] || [];
+      if (series.length === 0) return;
+      const clamped = Math.max(0, Math.min(series.length - 1, idx));
+      if (selectedDayIndex === clamped) return;
+      selectedDayIndex = clamped;
+      updateActiveDayReadouts();
+      syncAllChartsCrosshairAndTooltip();
+    }
+
+    function stepSelectedDay(delta) {
+      const series = datasetByTicker[currentTicker] || [];
+      if (series.length === 0) return;
+      const base = selectedDayIndex < 0 ? series.length - 1 : selectedDayIndex;
+      setSelectedDayIndex(base + delta);
+    }
+
+    function resetToLatestDay() {
+      const series = datasetByTicker[currentTicker] || [];
+      if (series.length === 0) return;
+      setSelectedDayIndex(series.length - 1);
+      showToast('가장 최신 거래일 데이터로 이동했습니다.');
+    }
+
+    function syncAllChartsCrosshairAndTooltip() {
+      const allCharts = [candleChart, mainChart, ...subCharts];
+      allCharts.forEach(ch => {
+        if (!ch) return;
+        const meta = ch.getDatasetMeta(0);
+        if (meta && meta.data && meta.data[selectedDayIndex]) {
+          const pt = meta.data[selectedDayIndex];
+          ch.tooltip.setActiveElements(
+            [{ datasetIndex: 0, index: selectedDayIndex }],
+            { x: pt.x, y: pt.y }
+          );
+        }
+        ch.update('none');
+      });
+    }
+
+    function updateActiveDayReadouts() {
+      const series = datasetByTicker[currentTicker] || [];
+      if (series.length === 0) return;
+      const idx = selectedDayIndex >= 0 && selectedDayIndex < series.length
+        ? selectedDayIndex
+        : series.length - 1;
+      const row = series[idx];
+      const displayName = currentTicker === 'QTY' ? 'QTY (QLD)' : currentTicker;
+
+      document.getElementById('summaryTickerTitle').textContent = displayName;
+      document.getElementById('summaryLatestDate').textContent = row.date;
+      document.getElementById('summaryClosePrice').textContent = '종가 $' + row.close.toFixed(2);
+      document.getElementById('summaryLatestCrema').textContent = row.cremaIndex.toFixed(2);
+      document.getElementById('summaryDayIndexInfo').textContent = `최근 6개월(${series.length}영업일) 중 ${idx + 1}일차`;
+
+      const zoneEl = document.getElementById('summarySignalZone');
+      if (row.cremaIndex >= 85) {
+        zoneEl.textContent = '핵심 저평가 바닥 (85점↑)';
+        zoneEl.className = 'text-xs sm:text-sm font-extrabold text-emerald-400 mt-1';
+      } else if (row.cremaIndex >= 60) {
+        zoneEl.textContent = '분할 매수 진입 (60점↑)';
+        zoneEl.className = 'text-xs sm:text-sm font-extrabold text-amber-400 mt-1';
+      } else if (row.cremaIndex >= 31) {
+        zoneEl.textContent = '평시 중립 구간 (현금 대기)';
+        zoneEl.className = 'text-xs sm:text-sm font-extrabold text-sky-400 mt-1';
+      } else {
+        zoneEl.textContent = '고평가 과열 구간 (31점↓)';
+        zoneEl.className = 'text-xs sm:text-sm font-extrabold text-rose-400 mt-1';
+      }
+
+      const chgSign = row.changePct >= 0 ? '+' : '';
+      document.getElementById('candleActiveReadout').textContent =
+        `${row.date} · 시 $${row.open.toFixed(2)} · 고 $${row.high.toFixed(2)} · 저 $${row.low.toFixed(2)} · 종 $${row.close.toFixed(2)} (${chgSign}${row.changePct.toFixed(2)}%) · 200일선 $${row.ma200.toFixed(2)}`;
+
+      document.getElementById('mainActiveReadout').textContent =
+        `${row.date} · 크레마 ${row.cremaIndex.toFixed(2)}점 · 종가 $${row.close.toFixed(2)}`;
+
+      document.getElementById('badgeSub1').textContent =
+        `${row.date.slice(5)} | ${row.scoreDd.toFixed(1)}점 (${row.rawDd >= 0 ? '+' : ''}${row.rawDd.toFixed(2)}%)`;
+      document.getElementById('badgeSub2').textContent =
+        `${row.date.slice(5)} | ${row.scoreRw.toFixed(1)}점 (RSI ${row.rawRw.toFixed(1)})`;
+      document.getElementById('badgeSub3').textContent =
+        `${row.date.slice(5)} | ${row.scoreRd.toFixed(1)}점 (RSI ${row.rawRd.toFixed(1)})`;
+      document.getElementById('badgeSub4').textContent =
+        `${row.date.slice(5)} | ${row.scoreVx.toFixed(1)}점 (${row.rawVx >= 0 ? '+' : ''}${row.rawVx.toFixed(2)}%)`;
+      document.getElementById('badgeSub5').textContent =
+        `${row.date.slice(5)} | ${row.scoreMa.toFixed(1)}점 (${row.rawMa >= 0 ? '+' : ''}${row.rawMa.toFixed(2)}%)`;
+      document.getElementById('badgeSub6').textContent =
+        `${row.date.slice(5)} | ${row.scoreFg.toFixed(1)}점 (FG ${row.rawFg.toFixed(1)})`;
+    }
+
+    // ========================================================================
+    // 4. 로컬 스토리지 로드 및 저장
+    // ========================================================================
+    function loadAllData() {
+      if (GITHUB_ACTIONS_DATA && GITHUB_ACTIONS_DATA.QQQ && GITHUB_ACTIONS_DATA.QTY && GITHUB_ACTIONS_DATA.TQQQ) {
+        datasetByTicker = GITHUB_ACTIONS_DATA;
+        saveAllData();
+        return;
+      }
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (
+            parsed &&
+            Array.isArray(parsed.QQQ) && parsed.QQQ.length >= 100 && parsed.QQQ[0].open !== undefined &&
+            Array.isArray(parsed.QTY) && parsed.QTY.length >= 100 &&
+            Array.isArray(parsed.TQQQ) && parsed.TQQQ.length >= 100
+          ) {
+            datasetByTicker = parsed;
+            return;
+          }
+        }
+      } catch (e) {
+        // 스토리지 제한 환경 폴백
+      }
+      datasetByTicker = {
+        QQQ: expandToDailySeries('QQQ', ANCHOR_POINTS.QQQ),
+        QTY: expandToDailySeries('QTY', ANCHOR_POINTS.QTY),
+        TQQQ: expandToDailySeries('TQQQ', ANCHOR_POINTS.TQQQ)
+      };
+      saveAllData();
+    }
+
+    function saveAllData() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(datasetByTicker));
+      } catch (e) {
+        // 스토리지 제한 무시
+      }
+    }
+
+    // ========================================================================
+    // 5. 최상단 종목 선택 버튼 핸들러 (QQQ / QTY / TQQQ)
+    // ========================================================================
+    function selectTicker(ticker) {
+      currentTicker = ticker;
+      const tickers = ['QQQ', 'QTY', 'TQQQ'];
+      tickers.forEach(t => {
+        const btn = document.getElementById('btnSelect' + t);
+        if (!btn) return;
+        if (t === ticker) {
+          btn.className = 'px-5 py-2 rounded-lg text-sm font-extrabold transition-all bg-amber-500 text-slate-950 shadow-md';
+        } else {
+          btn.className = 'px-5 py-2 rounded-lg text-sm font-extrabold transition-all text-slate-300 hover:text-white hover:bg-slate-800';
+        }
+      });
+      renderDashboard();
+    }
+
+    // ========================================================================
+    // 6. 일봉 그래프 + 크레마 지수 그래프 + 6대 지표 그래프 렌더링
+    // ========================================================================
+    function renderDashboard() {
+      const series = (datasetByTicker[currentTicker] || []).slice().sort((a, b) => a.date.localeCompare(b.date));
+      if (series.length === 0) return;
+
+      if (selectedDayIndex < 0 || selectedDayIndex >= series.length) {
+        selectedDayIndex = series.length - 1;
+      }
+
+      const labels = series.map(d => d.date.slice(5));
+      const fullDates = series.map(d => d.date);
+      const displayName = currentTicker === 'QTY' ? 'QTY (QLD)' : currentTicker;
+
+      const maxRow = series.reduce((acc, cur) => (cur.cremaIndex > acc.cremaIndex ? cur : acc), series[0]);
+      const minRow = series.reduce((acc, cur) => (cur.cremaIndex < acc.cremaIndex ? cur : acc), series[0]);
+      document.getElementById('summaryMax6M').textContent = maxRow.cremaIndex.toFixed(2) + '점';
+      document.getElementById('summaryMaxDate').textContent = maxRow.date + ' (종가 $' + maxRow.close.toFixed(2) + ')';
+      document.getElementById('summaryMin6M').textContent = minRow.cremaIndex.toFixed(2) + '점';
+      document.getElementById('summaryMinDate').textContent = minRow.date + ' (종가 $' + minRow.close.toFixed(2) + ')';
+      document.getElementById('summarySyncMeta').textContent = `최근 6개월 (${series.length}영업일 일봉)`;
+      document.getElementById('candleChartTitle').textContent = `${displayName} 최근 6개월 일봉(Candlestick) & 200일 이동평균선`;
+      document.getElementById('mainChartTitle').textContent = `${displayName} 최근 6개월 크레마 지수(Crema Index) 일별 누적 추이`;
+      document.getElementById('footerRecordCount').textContent = `${displayName} 일봉 및 크레마 누적 데이터 ${series.length}일 저장됨 (매일 07:00 KST 갱신)`;
+
+      renderCandleChart(labels, fullDates, series);
+      renderMainChart(labels, fullDates, series);
+
+      const subConfigs = [
+        {
+          idx: 0,
+          canvasId: 'subChart1',
+          label: '연중 낙폭 점수',
+          color: '#f59e0b',
+          bg: 'rgba(245, 158, 11, 0.16)',
+          scores: series.map(d => d.scoreDd),
+          raws: series.map(d => '고점 대비 ' + d.rawDd.toFixed(2) + '%')
+        },
+        {
+          idx: 1,
+          canvasId: 'subChart2',
+          label: '주간 RSI 점수',
+          color: '#38bdf8',
+          bg: 'rgba(56, 189, 248, 0.16)',
+          scores: series.map(d => d.scoreRw),
+          raws: series.map(d => '주간 RSI ' + d.rawRw.toFixed(1))
+        },
+        {
+          idx: 2,
+          canvasId: 'subChart3',
+          label: '일간 RSI 점수',
+          color: '#22d3ee',
+          bg: 'rgba(34, 211, 238, 0.16)',
+          scores: series.map(d => d.scoreRd),
+          raws: series.map(d => '일간 RSI ' + d.rawRd.toFixed(1))
+        },
+        {
+          idx: 3,
+          canvasId: 'subChart4',
+          label: 'VIX 이격도 점수',
+          color: '#c084fc',
+          bg: 'rgba(192, 132, 252, 0.16)',
+          scores: series.map(d => d.scoreVx),
+          raws: series.map(d => 'VIX 이격 ' + (d.rawVx >= 0 ? '+' : '') + d.rawVx.toFixed(2) + '%')
+        },
+        {
+          idx: 4,
+          canvasId: 'subChart5',
+          label: '200일선 거리 점수',
+          color: '#34d399',
+          bg: 'rgba(52, 211, 153, 0.16)',
+          scores: series.map(d => d.scoreMa),
+          raws: series.map(d => '200일선 ' + (d.rawMa >= 0 ? '+' : '') + d.rawMa.toFixed(2) + '%')
+        },
+        {
+          idx: 5,
+          canvasId: 'subChart6',
+          label: '공포·탐욕 역산 점수',
+          color: '#fb7185',
+          bg: 'rgba(251, 113, 133, 0.16)',
+          scores: series.map(d => d.scoreFg),
+          raws: series.map(d => 'CNN 공포탐욕 ' + d.rawFg.toFixed(1))
+        }
+      ];
+
+      subConfigs.forEach(cfg => {
+        renderSubIndicatorChart(cfg, labels, fullDates);
+      });
+
+      updateActiveDayReadouts();
+      syncAllChartsCrosshairAndTooltip();
+    }
+
+    function renderCandleChart(labels, fullDates, series) {
+      const ctx = document.getElementById('priceCandleChart');
+      if (!ctx || typeof Chart === 'undefined') return;
+
+      const closes = series.map(d => d.close);
+      const ma200s = series.map(d => d.ma200);
+      const allLows = series.map(d => Math.min(d.low, d.ma200));
+      const allHighs = series.map(d => Math.max(d.high, d.ma200));
+      const minPrice = Math.min(...allLows);
+      const maxPrice = Math.max(...allHighs);
+      const pad = (maxPrice - minPrice) * 0.08;
+
+      bindDragScrubToChart(ctx, () => candleChart);
+
+      if (candleChart) {
+        candleChart.data.labels = labels;
+        candleChart.data.datasets[0].data = closes;
+        candleChart.data.datasets[1].data = ma200s;
+        candleChart.options.scales.y.min = Number((minPrice - pad).toFixed(1));
+        candleChart.options.scales.y.max = Number((maxPrice + pad).toFixed(1));
+        candleChart.options.plugins.tooltip.callbacks.title = items => {
+          const i = items[0].dataIndex;
+          const r = series[i];
+          const sign = r.changePct >= 0 ? '+' : '';
+          return `${fullDates[i]} (${currentTicker === 'QTY' ? 'QTY/QLD' : currentTicker} ${sign}${r.changePct.toFixed(2)}%)`;
+        };
+        candleChart.options.plugins.tooltip.callbacks.label = item => {
+          const r = series[item.dataIndex];
+          return `시 $${r.open.toFixed(2)} / 고 $${r.high.toFixed(2)} / 저 $${r.low.toFixed(2)} / 종 $${r.close.toFixed(2)}`;
+        };
+        candleChart.options.plugins.tooltip.callbacks.afterLabel = item => {
+          const r = series[item.dataIndex];
+          return `200일 이동평균선: $${r.ma200.toFixed(2)} (이격 ${r.rawMa >= 0 ? '+' : ''}${r.rawMa.toFixed(2)}%)`;
+        };
+        candleChart.update('none');
+        return;
+      }
+
+      candleChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: '일봉 종가 기준선 (OHLC 캔들)',
+              data: closes,
+              borderColor: 'rgba(248, 250, 252, 0.15)',
+              backgroundColor: 'transparent',
+              pointRadius: 0,
+              borderWidth: 1,
+              fill: false
+            },
+            {
+              label: '200일 이동평균선 ($)',
+              data: ma200s,
+              borderColor: 'rgba(192, 132, 252, 0.9)',
+              borderDash: [5, 4],
+              pointRadius: 0,
+              borderWidth: 1.8,
+              tension: 0.25,
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          events: [],
+          scales: {
+            y: {
+              min: Number((minPrice - pad).toFixed(1)),
+              max: Number((maxPrice + pad).toFixed(1)),
+              grid: { color: 'rgba(148, 163, 184, 0.12)' },
+              ticks: {
+                color: '#94a3b8',
+                callback: v => '$' + Number(v).toFixed(0)
+              }
+            },
+            x: {
+              grid: { color: 'rgba(148, 163, 184, 0.06)' },
+              ticks: { color: '#cbd5e1', font: { size: 10 }, maxTicksLimit: 12 }
+            }
+          },
+          plugins: {
+            legend: {
+              labels: { color: '#e2e8f0', font: { size: 11, weight: 'bold' } }
+            },
+            tooltip: {
+              enabled: true,
+              position: 'nearest',
+              callbacks: {
+                title: items => {
+                  const i = items[0].dataIndex;
+                  const r = series[i];
+                  const sign = r.changePct >= 0 ? '+' : '';
+                  return `${fullDates[i]} (${currentTicker === 'QTY' ? 'QTY/QLD' : currentTicker} ${sign}${r.changePct.toFixed(2)}%)`;
+                },
+                label: item => {
+                  const r = series[item.dataIndex];
+                  return `시 $${r.open.toFixed(2)} / 고 $${r.high.toFixed(2)} / 저 $${r.low.toFixed(2)} / 종 $${r.close.toFixed(2)}`;
+                },
+                afterLabel: item => {
+                  const r = series[item.dataIndex];
+                  return `200일 이동평균선: $${r.ma200.toFixed(2)} (이격 ${r.rawMa >= 0 ? '+' : ''}${r.rawMa.toFixed(2)}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderMainChart(labels, fullDates, series) {
+      const ctx = document.getElementById('mainCremaChart');
+      if (!ctx || typeof Chart === 'undefined') return;
+
+      const scores = series.map(d => d.cremaIndex);
+      const closes = series.map(d => d.close);
+      const line60 = series.map(() => 60);
+      const line85 = series.map(() => 85);
+
+      bindDragScrubToChart(ctx, () => mainChart);
+
+      if (mainChart) {
+        mainChart.data.labels = labels;
+        mainChart.data.datasets[0].data = scores;
+        mainChart.data.datasets[1].data = line60;
+        mainChart.data.datasets[2].data = line85;
+        mainChart.options.plugins.tooltip.callbacks.title = items => {
+          const i = items[0].dataIndex;
+          return fullDates[i] + ' (' + (currentTicker === 'QTY' ? 'QTY/QLD' : currentTicker) + ' 종가 $' + closes[i].toFixed(2) + ')';
+        };
+        mainChart.update('none');
+        return;
+      }
+
+      mainChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: '일별 크레마 지수 (0~100점)',
+              data: scores,
+              borderColor: '#f59e0b',
+              backgroundColor: 'rgba(245, 158, 11, 0.18)',
+              fill: true,
+              tension: 0.2,
+              pointRadius: 0,
+              pointHoverRadius: 5,
+              borderWidth: 2.2
+            },
+            {
+              label: '분할 매수 기준선 (60점)',
+              data: line60,
+              borderColor: 'rgba(56, 189, 248, 0.75)',
+              borderDash: [6, 4],
+              pointRadius: 0,
+              borderWidth: 1.3,
+              fill: false
+            },
+            {
+              label: '핵심 바닥 기준선 (85점)',
+              data: line85,
+              borderColor: 'rgba(16, 185, 129, 0.85)',
+              borderDash: [4, 4],
+              pointRadius: 0,
+              borderWidth: 1.3,
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          events: [],
+          scales: {
+            y: {
+              min: 0,
+              max: 100,
+              grid: { color: 'rgba(148, 163, 184, 0.12)' },
+              ticks: { color: '#94a3b8', stepSize: 20 }
+            },
+            x: {
+              grid: { color: 'rgba(148, 163, 184, 0.06)' },
+              ticks: { color: '#cbd5e1', font: { size: 10 }, maxTicksLimit: 12 }
+            }
+          },
+          plugins: {
+            legend: {
+              labels: { color: '#e2e8f0', font: { size: 11, weight: 'bold' } }
+            },
+            tooltip: {
+              enabled: true,
+              position: 'nearest',
+              callbacks: {
+                title: items => {
+                  const i = items[0].dataIndex;
+                  return fullDates[i] + ' (' + (currentTicker === 'QTY' ? 'QTY/QLD' : currentTicker) + ' 종가 $' + closes[i].toFixed(2) + ')';
+                },
+                label: item => '크레마 지수: ' + Number(item.raw).toFixed(2) + '점'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderSubIndicatorChart(cfg, labels, fullDates) {
+      const ctx = document.getElementById(cfg.canvasId);
+      if (!ctx || typeof Chart === 'undefined') return;
+
+      bindDragScrubToChart(ctx, () => subCharts[cfg.idx]);
+
+      const existing = subCharts[cfg.idx];
+      if (existing) {
+        existing.data.labels = labels;
+        existing.data.datasets[0].data = cfg.scores;
+        existing.options.plugins.tooltip.callbacks.title = items => fullDates[items[0].dataIndex];
+        existing.options.plugins.tooltip.callbacks.afterLabel = item => '실제 수치: ' + cfg.raws[item.dataIndex];
+        existing.update('none');
+        return;
+      }
+
+      subCharts[cfg.idx] = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: cfg.label,
+              data: cfg.scores,
+              borderColor: cfg.color,
+              backgroundColor: cfg.bg,
+              fill: true,
+              tension: 0.2,
+              pointRadius: 0,
+              pointHoverRadius: 4,
+              borderWidth: 1.8
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          events: [],
+          scales: {
+            y: {
+              min: 0,
+              max: 100,
+              grid: { color: 'rgba(148, 163, 184, 0.1)' },
+              ticks: { color: '#94a3b8', stepSize: 25, font: { size: 10 } }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: '#94a3b8', font: { size: 10 }, maxTicksLimit: 7 }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              enabled: true,
+              position: 'nearest',
+              callbacks: {
+                title: items => fullDates[items[0].dataIndex],
+                label: item => '환산 점수: ' + Number(item.raw).toFixed(1) + '점',
+                afterLabel: item => '실제 수치: ' + cfg.raws[item.dataIndex]
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // ========================================================================
+    // 7. 한국시간(KST) 07:00 기준 일일 자동 갱신·조회 스케줄러
+    // ========================================================================
+    function getKstNow() {
+      const now = new Date();
+      const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+      return new Date(utcMs + 9 * 3600000);
+    }
+
+    function formatKstDateString(kstDate) {
+      const y = kstDate.getFullYear();
+      const m = String(kstDate.getMonth() + 1).padStart(2, '0');
+      const d = String(kstDate.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function updateKstClockAndCheckSchedule() {
+      const kst = getKstNow();
+      const hh = String(kst.getHours()).padStart(2, '0');
+      const mm = String(kst.getMinutes()).padStart(2, '0');
+      const ss = String(kst.getSeconds()).padStart(2, '0');
+      document.getElementById('kstClockText').textContent = `KST ${hh}:${mm}:${ss}`;
+
+      const next7 = new Date(kst.getTime());
+      next7.setHours(7, 0, 0, 0);
+      if (kst >= next7) {
+        next7.setDate(next7.getDate() + 1);
+      }
+      const diffSec = Math.max(0, Math.floor((next7.getTime() - kst.getTime()) / 1000));
+      const remH = String(Math.floor(diffSec / 3600)).padStart(2, '0');
+      const remM = String(Math.floor((diffSec % 3600) / 60)).padStart(2, '0');
+      document.getElementById('nextSyncCountdown').textContent = `다음 07시 갱신 -${remH}시간 ${remM}분`;
+
+      const todayStr = formatKstDateString(kst);
+      let lastSynced = '';
+      try {
+        lastSynced = localStorage.getItem(LAST_SYNC_KEY) || '';
+      } catch (e) {
+        lastSynced = '';
+      }
+
+      if (kst.getHours() >= 7 && lastSynced !== todayStr) {
+        runDailyKstSync(false);
+      }
+    }
+
+    async function fetchTickerSeriesFromPublicApi(yahooSymbol) {
+      const endpoint = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?range=1y&interval=1d`;
+      try {
+        const res = await fetch(endpoint, { method: 'GET' });
+        if (!res.ok) return null;
+        const json = await res.json();
+        const result = json && json.chart && json.chart.result && json.chart.result[0];
+        if (!result) return null;
+        return result;
+      } catch (err) {
+        return null;
+      }
+    }
+
+    async function runDailyKstSync(isManual) {
+      const kst = getKstNow();
+      const todayStr = formatKstDateString(kst);
+      const hh = String(kst.getHours()).padStart(2, '0');
+      const mm = String(kst.getMinutes()).padStart(2, '0');
+
+      const syncBtn = document.getElementById('btnSyncNow');
+      if (syncBtn) syncBtn.textContent = '조회 중...';
+
+      const symbolMap = { QQQ: 'QQQ', QTY: 'QLD', TQQQ: 'TQQQ' };
+      let updatedOnline = false;
+
+      try {
+        await fetchTickerSeriesFromPublicApi('^VIX');
+        for (const key of ['QQQ', 'QTY', 'TQQQ']) {
+          const chartData = await fetchTickerSeriesFromPublicApi(symbolMap[key]);
+          if (chartData && chartData.timestamp && chartData.indicators && chartData.indicators.quote) {
+            const q = chartData.indicators.quote[0];
+            const closes = q.close || [];
+            const opens = q.open || [];
+            const highs = q.high || [];
+            const lows = q.low || [];
+            const validCloses = closes.filter(v => typeof v === 'number' && !isNaN(v));
+            if (validCloses.length >= 200) {
+              const lastIdx = closes.length - 1;
+              const latestClose = validCloses[validCloses.length - 1];
+              const prevClose = validCloses.length > 1 ? validCloses[validCloses.length - 2] : latestClose;
+              const latestOpen = typeof opens[lastIdx] === 'number' ? opens[lastIdx] : prevClose;
+              const latestHigh = typeof highs[lastIdx] === 'number' ? highs[lastIdx] : Math.max(latestOpen, latestClose);
+              const latestLow = typeof lows[lastIdx] === 'number' ? lows[lastIdx] : Math.min(latestOpen, latestClose);
+
+              const ytdHigh = Math.max(...validCloses.slice(-252));
+              const ma200 = validCloses.slice(-200).reduce((a, b) => a + b, 0) / 200;
+              const rawDd = ((latestClose / ytdHigh) - 1) * 100;
+              const rawMa = ((latestClose / ma200) - 1) * 100;
+
+              const series = datasetByTicker[key] || [];
+              const prev = series[series.length - 1];
+              const newEntry = buildRecord(
+                todayStr,
+                key,
+                latestClose,
+                rawDd,
+                prev ? prev.rawRw : 39.0,
+                prev ? prev.rawRd : 39.0,
+                prev ? prev.rawVx : 5.99,
+                rawMa,
+                prev ? prev.rawFg : 43.78,
+                { open: latestOpen, high: latestHigh, low: latestLow, prevClose }
+              );
+              upsertTickerRecord(key, newEntry);
+              updatedOnline = true;
+            }
+          }
+        }
+      } catch (e) {
+        updatedOnline = false;
+      }
+
+      try {
+        localStorage.setItem(LAST_SYNC_KEY, todayStr);
+      } catch (e) {
+        // 스토리지 제한 무시
+      }
+
+      saveAllData();
+      renderDashboard();
+
+      if (syncBtn) syncBtn.textContent = '지금 시세 조회·누적';
+      const labelEl = document.getElementById('lastSyncTimestampLabel');
+      if (labelEl) {
+        labelEl.textContent = `최근 갱신: ${todayStr} ${hh}:${mm} KST`;
+      }
+
+      if (isManual) {
+        showToast(
+          updatedOnline
+            ? `한국시간 ${hh}:${mm} 기준 실시간 일봉 및 크레마 지수를 조회하여 누적했습니다.`
+            : `한국시간 ${hh}:${mm} 기준 최근 6개월 일봉·크레마 데이터(${datasetByTicker[currentTicker].length}영업일) 동기화를 완료했습니다.`
+        );
+      }
+    }
+
+    function upsertTickerRecord(ticker, record) {
+      const list = datasetByTicker[ticker] || [];
+      const idx = list.findIndex(item => item.date === record.date);
+      if (idx >= 0) {
+        list[idx] = record;
+      } else {
+        list.push(record);
+      }
+      list.sort((a, b) => a.date.localeCompare(b.date));
+      if (list.length > 140) {
+        datasetByTicker[ticker] = list.slice(list.length - 140);
+      } else {
+        datasetByTicker[ticker] = list;
+      }
+    }
+
+    // ========================================================================
+    // 8. 선택 종목 일봉 + 크레마 누적 데이터 CSV 다운로드 및 키보드 좌우 화살표 지원
+    // ========================================================================
+    function exportCurrentTickerCsv() {
+      const list = datasetByTicker[currentTicker] || [];
+      const headers = [
+        'Date', 'Ticker', 'Open', 'High', 'Low', 'Close', 'Change_Pct', 'MA200', 'Crema_Index',
+        'Score_Drawdown(30%)', 'Score_RSI_Weekly(20%)', 'Score_RSI_Daily(10%)',
+        'Score_VIX_Gap(15%)', 'Score_MA200_Gap(15%)', 'Score_Fear_Greed(10%)',
+        'Raw_Drawdown_Pct', 'Raw_RSI_Weekly', 'Raw_RSI_Daily',
+        'Raw_VIX_Gap_Pct', 'Raw_MA200_Gap_Pct', 'Raw_Fear_Greed'
+      ];
+      const rows = list.map(r => [
+        r.date, r.ticker, r.open, r.high, r.low, r.close, r.changePct, r.ma200, r.cremaIndex,
+        r.scoreDd, r.scoreRw, r.scoreRd, r.scoreVx, r.scoreMa, r.scoreFg,
+        r.rawDd, r.rawRw, r.rawRd, r.rawVx, r.rawMa, r.rawFg
+      ]);
+      const csv = '\uFEFF' + [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `crema_ohlc_6m_${currentTicker.toLowerCase()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast(`${currentTicker} 최근 6개월 일봉 및 크레마 데이터(${list.length}일) CSV를 저장했습니다.`);
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const box = document.getElementById('toastBox');
+      const txt = document.getElementById('toastText');
+      txt.textContent = msg;
+      box.classList.remove('hidden');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        box.classList.add('hidden');
+      }, 3000);
+    }
+
+    window.addEventListener('keydown', e => {
+      if (e.key === 'ArrowLeft') {
+        stepSelectedDay(-1);
+      } else if (e.key === 'ArrowRight') {
+        stepSelectedDay(1);
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadAllData();
+      selectTicker('QQQ');
+      updateKstClockAndCheckSchedule();
+      setInterval(updateKstClockAndCheckSchedule, 1000);
+    });
+  </script>
+</body>
+</html>

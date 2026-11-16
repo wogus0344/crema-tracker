@@ -1,0 +1,9 @@
+{
+  "name": "나스닥 크레마 지수 대시보드 (QQQ·QTY·TQQQ)",
+  "short_name": "크레마지수",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0b1120",
+  "theme_color": "#0b1120",
+  "orientation": "portrait-primary"
+}
