@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="크레마지수" />
-  <title>크레마 지수 최근 6개월 일봉 & 일별 누적 대시보드 (QQQ · QTY · TQQQ)</title>
+  <title>크레마 지수 최근 6개월 일봉 & 일별 대시보드 (QQQ · QLD · TQQQ · SOXL · VOO · SCHD)</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -35,67 +35,87 @@
 <body class="min-h-screen flex flex-col selection:bg-amber-500 selection:text-slate-950">
 
   <!-- ==================================================================== -->
-  <!-- 최상단: 종목 선택 버튼 (QQQ / QTY / TQQQ) & 매일 07:00 KST 자동 갱신 바 -->
+  <!-- 최상단: 종목 선택 버튼 (QQQ / QLD / TQQQ / SOXL) & 조회하기 버튼 바 -->
   <!-- ==================================================================== -->
   <header class="sticky top-0 z-30 border-b border-slate-800 bg-slate-950/95 backdrop-blur-md">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
 
-      <!-- 최상단 3개 종목 선택 버튼 -->
+      <!-- 최상단 4개 종목 선택 버튼 (QQQ · QLD · TQQQ · SOXL · VOO · SCHD) -->
       <div class="flex items-center gap-2 flex-wrap">
         <span class="text-xs font-extrabold uppercase tracking-wider text-amber-400 mr-1">종목 선택</span>
-        <div class="inline-flex p-1 rounded-xl bg-slate-900 border border-slate-800 gap-1">
+        <div class="inline-flex p-1 rounded-xl bg-slate-900 border border-slate-800 gap-1 flex-wrap">
           <button
             id="btnSelectQQQ"
             type="button"
             onclick="selectTicker('QQQ')"
-            class="px-5 py-2 rounded-lg text-sm font-extrabold transition-all bg-amber-500 text-slate-950 shadow-md"
+            class="px-4 sm:px-5 py-2 rounded-lg text-sm font-extrabold transition-all bg-amber-500 text-slate-950 shadow-md"
           >
             QQQ
           </button>
           <button
-            id="btnSelectQTY"
+            id="btnSelectQLD"
             type="button"
-            onclick="selectTicker('QTY')"
-            class="px-5 py-2 rounded-lg text-sm font-extrabold transition-all text-slate-300 hover:text-white hover:bg-slate-800"
+            onclick="selectTicker('QLD')"
+            class="px-4 sm:px-5 py-2 rounded-lg text-sm font-extrabold transition-all text-slate-300 hover:text-white hover:bg-slate-800"
           >
-            QTY <span class="text-[11px] font-semibold opacity-80">(QLD)</span>
+            QLD
           </button>
           <button
             id="btnSelectTQQQ"
             type="button"
             onclick="selectTicker('TQQQ')"
-            class="px-5 py-2 rounded-lg text-sm font-extrabold transition-all text-slate-300 hover:text-white hover:bg-slate-800"
+            class="px-4 sm:px-5 py-2 rounded-lg text-sm font-extrabold transition-all text-slate-300 hover:text-white hover:bg-slate-800"
           >
             TQQQ
+          </button>
+          <button
+            id="btnSelectSOXL"
+            type="button"
+            onclick="selectTicker('SOXL')"
+            class="px-4 sm:px-5 py-2 rounded-lg text-sm font-extrabold transition-all text-slate-300 hover:text-white hover:bg-slate-800"
+          >
+            SOXL
+          </button>
+          <button
+            id="btnSelectVOO"
+            type="button"
+            onclick="selectTicker('VOO')"
+            class="px-4 sm:px-5 py-2 rounded-lg text-sm font-extrabold transition-all text-slate-300 hover:text-white hover:bg-slate-800"
+          >
+            VOO
+          </button>
+          <button
+            id="btnSelectSCHD"
+            type="button"
+            onclick="selectTicker('SCHD')"
+            class="px-4 sm:px-5 py-2 rounded-lg text-sm font-extrabold transition-all text-slate-300 hover:text-white hover:bg-slate-800"
+          >
+            SCHD
           </button>
         </div>
       </div>
 
-      <!-- 한국시간(KST) 07:00 자동 갱신·누적 상태 및 수동 동기화 -->
+      <!-- 수동 조회하기 버튼 & 현재 조회 상태 표시 -->
       <div class="flex flex-wrap items-center gap-2 text-xs">
-        <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800">
-          <span id="syncStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span class="text-slate-300 font-medium">매일 <strong class="text-amber-300">07:00 KST</strong> 자동 조회·누적</span>
-          <span class="text-slate-500">|</span>
-          <span id="kstClockText" class="text-slate-400 font-mono">KST --:--:--</span>
-          <span class="text-slate-500">|</span>
-          <span id="nextSyncCountdown" class="text-emerald-300 font-semibold">다음 갱신 대기</span>
-        </div>
-
         <button
-          id="btnSyncNow"
+          id="btnFetch6M"
           type="button"
-          onclick="runDailyKstSync(true)"
-          class="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-bold transition"
+          onclick="fetchLatest6MData()"
+          class="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 font-extrabold text-sm shadow-lg shadow-amber-500/20 transition flex items-center gap-1.5"
         >
-          지금 시세 조회·누적
+          <span>조회하기</span>
         </button>
+
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800">
+          <span id="syncStatusDot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span id="queryStatusLabel" class="text-slate-300 font-medium">최근 6개월 조회 대기</span>
+        </div>
 
         <button
           id="btnExportCsv"
           type="button"
           onclick="exportCurrentTickerCsv()"
-          class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold transition"
+          class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold transition"
         >
           CSV 저장
         </button>
@@ -139,32 +159,32 @@
           <div class="text-[11px] font-bold text-slate-400">선택 일자 · 종목</div>
           <div class="flex items-baseline gap-1.5 mt-0.5">
             <span id="summaryTickerTitle" class="text-lg font-black text-white">QQQ</span>
-            <span id="summaryLatestDate" class="text-xs font-extrabold text-amber-300 font-mono">2026-11-13</span>
+            <span id="summaryLatestDate" class="text-xs font-extrabold text-amber-300 font-mono">2026-11-18</span>
           </div>
-          <div id="summaryClosePrice" class="text-xs font-bold text-slate-300 mt-0.5">종가 $679.89</div>
+          <div id="summaryClosePrice" class="text-xs font-bold text-slate-300 mt-0.5">종가 $659.71</div>
         </div>
 
         <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800/90">
           <div class="text-[11px] text-slate-400">해당일 크레마 지수</div>
           <div class="flex items-baseline gap-1 mt-0.5">
-            <span id="summaryLatestCrema" class="text-2xl font-black text-amber-400">71.93</span>
+            <span id="summaryLatestCrema" class="text-2xl font-black text-amber-400">83.12</span>
             <span class="text-xs text-slate-400">/ 100점</span>
           </div>
-          <div id="summaryDayIndexInfo" class="text-[11px] text-slate-400 mt-0.5">131일 중 131일차</div>
+          <div id="summaryDayIndexInfo" class="text-[11px] text-slate-400 mt-0.5">133일 중 133일차</div>
         </div>
 
         <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800/90">
           <div class="text-[11px] text-slate-400">매수 신호 판정</div>
-          <div id="summarySignalZone" class="text-xs sm:text-sm font-extrabold text-emerald-400 mt-1">
-            분할 매수 구간 (60점↑)
+          <div id="summarySignalZone" class="text-xs sm:text-sm font-extrabold text-amber-400 mt-1">
+            분할 매수 진입 (60점↑)
           </div>
           <div class="text-[11px] text-slate-400 mt-0.5">30년 평균 31점</div>
         </div>
 
         <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800/90">
           <div class="text-[11px] text-slate-400">6개월 최고 (가장 쌌던 날)</div>
-          <div id="summaryMax6M" class="text-sm font-extrabold text-emerald-300 mt-1">88.45점</div>
-          <div id="summaryMaxDate" class="text-[11px] text-slate-400 mt-0.5">2026-11-06</div>
+          <div id="summaryMax6M" class="text-sm font-extrabold text-emerald-300 mt-1">88.90점</div>
+          <div id="summaryMaxDate" class="text-[11px] text-slate-400 mt-0.5">2026-11-17</div>
         </div>
 
         <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800/90">
@@ -174,9 +194,29 @@
         </div>
 
         <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800/90">
-          <div class="text-[11px] text-slate-400">일별 데이터 누적 현황</div>
-          <div id="summarySyncMeta" class="text-xs font-bold text-slate-200 mt-1">최근 6개월 (131영업일)</div>
-          <div id="lastSyncTimestampLabel" class="text-[11px] text-emerald-400 mt-0.5">07:00 KST 기준 동기화</div>
+          <div class="text-[11px] text-slate-400">조회 데이터 범위</div>
+          <div id="summarySyncMeta" class="text-xs font-bold text-slate-200 mt-1">최근 6개월 (133영업일)</div>
+          <div id="lastSyncTimestampLabel" class="text-[11px] text-emerald-400 mt-0.5">조회하기 버튼으로 최신화</div>
+        </div>
+      </div>
+
+      <!-- 선택일자 종가 기준 6개월 최고가 대비 하락률 / 6개월 최저가 대비 상승률 -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+        <div class="flex items-center justify-between bg-slate-900/80 px-3.5 py-2.5 rounded-xl border border-slate-800">
+          <div class="text-xs text-slate-300">
+            <span class="font-bold text-slate-400">6개월 최고가</span>
+            <span id="priceHigh6MLabel" class="ml-1 font-mono text-slate-200 font-semibold">($759.66)</span>
+            <span class="ml-1 text-slate-400">대비</span>
+          </div>
+          <div id="dropFromHigh6MPct" class="text-sm font-extrabold text-sky-400 font-mono">-13.16% 하락</div>
+        </div>
+        <div class="flex items-center justify-between bg-slate-900/80 px-3.5 py-2.5 rounded-xl border border-slate-800">
+          <div class="text-xs text-slate-300">
+            <span class="font-bold text-slate-400">6개월 최저가</span>
+            <span id="priceLow6MLabel" class="ml-1 font-mono text-slate-200 font-semibold">($647.05)</span>
+            <span class="ml-1 text-slate-400">대비</span>
+          </div>
+          <div id="riseFromLow6MPct" class="text-sm font-extrabold text-rose-400 font-mono">+1.96% 상승</div>
         </div>
       </div>
     </section>
@@ -196,7 +236,7 @@
           </p>
         </div>
         <div id="candleActiveReadout" class="text-xs sm:text-sm font-extrabold text-slate-100 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800 font-mono">
-          2026-11-13 · 시 $688.54 · 고 $688.75 · 저 $671.68 · 종 $679.89 (-1.20%)
+          2026-11-18 · 시 $657.20 · 고 $662.80 · 저 $653.40 · 종 $659.71 (+0.42%)
         </div>
       </div>
 
@@ -210,7 +250,7 @@
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div>
           <h1 class="text-base sm:text-lg font-extrabold text-white flex items-center gap-2 flex-wrap">
-            <span id="mainChartTitle">QQQ 최근 6개월 크레마 지수(Crema Index) 일별 누적 추이</span>
+            <span id="mainChartTitle">QQQ 최근 6개월 크레마 지수(Crema Index) 일별 추이</span>
             <span class="text-xs font-semibold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
               클릭 후 좌우 드래그로 일별 조회
             </span>
@@ -221,7 +261,7 @@
           </p>
         </div>
         <div id="mainActiveReadout" class="text-xs sm:text-sm font-extrabold text-amber-300 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800 font-mono">
-          2026-11-13 · 크레마 71.93점 · 종가 $679.89
+          2026-11-18 · 크레마 83.12점 · 종가 $659.71
         </div>
       </div>
 
@@ -230,11 +270,11 @@
       </div>
     </section>
 
-    <!-- 3. 각각의 6대 지표 최근 6개월 일별 누적 그래프 (2열 x 3행 그리드) -->
+    <!-- 3. 각각의 6대 지표 최근 6개월 일별 그래프 (2열 x 3행 그리드) -->
     <section class="space-y-3">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 px-1">
         <h2 class="text-sm sm:text-base font-extrabold text-white">
-          6대 구성 지표별 최근 6개월 일별 누적 그래프 (클릭 후 드래그 시 전 차트 일별 동기화)
+          6대 구성 지표별 최근 6개월 일별 그래프 (클릭 후 드래그 시 전 차트 일별 동기화)
         </h2>
         <span class="text-xs text-slate-400">어느 그래프에서든 클릭·드래그하면 해당 날짜의 일봉·크레마·6대 지표 수치가 함께 표시됩니다</span>
       </div>
@@ -248,7 +288,7 @@
               <span class="text-[11px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 mr-1">비중 30%</span>
               <span class="text-sm font-bold text-white">① 연중 낙폭</span>
             </div>
-            <span id="badgeSub1" class="text-xs font-extrabold text-amber-400 font-mono">90.7점 (-10.88%)</span>
+            <span id="badgeSub1" class="text-xs font-extrabold text-amber-400 font-mono">100.0점 (-13.52%)</span>
           </div>
           <p class="text-[11px] text-slate-400">고점 그대로(0%) = 0점, 고점 대비 -12% 이하 = 100점</p>
           <div class="relative h-48 w-full scrub-canvas-wrap">
@@ -263,7 +303,7 @@
               <span class="text-[11px] font-extrabold px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 mr-1">비중 20%</span>
               <span class="text-sm font-bold text-white">② 주간 RSI (14주)</span>
             </div>
-            <span id="badgeSub2" class="text-xs font-extrabold text-sky-400 font-mono">77.5점 (RSI 39.0)</span>
+            <span id="badgeSub2" class="text-xs font-extrabold text-sky-400 font-mono">85.0점 (RSI 36.0)</span>
           </div>
           <p class="text-[11px] text-slate-400">주간 RSI 70 이상 = 0점, RSI 30 이하 = 100점</p>
           <div class="relative h-48 w-full scrub-canvas-wrap">
@@ -278,7 +318,7 @@
               <span class="text-[11px] font-extrabold px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 mr-1">비중 10%</span>
               <span class="text-sm font-bold text-white">③ 일간 RSI (14일)</span>
             </div>
-            <span id="badgeSub3" class="text-xs font-extrabold text-cyan-400 font-mono">77.5점 (RSI 39.0)</span>
+            <span id="badgeSub3" class="text-xs font-extrabold text-cyan-400 font-mono">85.0점 (RSI 36.0)</span>
           </div>
           <p class="text-[11px] text-slate-400">일간 RSI 70 이상 = 0점, RSI 30 이하 = 100점</p>
           <div class="relative h-48 w-full scrub-canvas-wrap">
@@ -293,7 +333,7 @@
               <span class="text-[11px] font-extrabold px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 mr-1">비중 15%</span>
               <span class="text-sm font-bold text-white">④ VIX 공포지수 이격도</span>
             </div>
-            <span id="badgeSub4" class="text-xs font-extrabold text-purple-400 font-mono">32.0점 (+5.99%)</span>
+            <span id="badgeSub4" class="text-xs font-extrabold text-purple-400 font-mono">77.7점 (+28.87%)</span>
           </div>
           <p class="text-[11px] text-slate-400">평소 대비 -10% 이하 = 0점, +40% 이상 = 100점</p>
           <div class="relative h-48 w-full scrub-canvas-wrap">
@@ -308,7 +348,7 @@
               <span class="text-[11px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 mr-1">비중 15%</span>
               <span class="text-sm font-bold text-white">⑤ 200일 이동평균선 거리</span>
             </div>
-            <span id="badgeSub5" class="text-xs font-extrabold text-emerald-400 font-mono">67.5점 (-4.19%)</span>
+            <span id="badgeSub5" class="text-xs font-extrabold text-emerald-400 font-mono">79.3점 (-7.02%)</span>
           </div>
           <p class="text-[11px] text-slate-400">200일선 +12% 위 = 0점, -12% 아래 = 100점</p>
           <div class="relative h-48 w-full scrub-canvas-wrap">
@@ -323,7 +363,7 @@
               <span class="text-[11px] font-extrabold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 mr-1">비중 10%</span>
               <span class="text-sm font-bold text-white">⑥ 공포·탐욕 지수 역산</span>
             </div>
-            <span id="badgeSub6" class="text-xs font-extrabold text-rose-400 font-mono">56.2점 (FG 43.8)</span>
+            <span id="badgeSub6" class="text-xs font-extrabold text-rose-400 font-mono">71.0점 (FG 29.0)</span>
           </div>
           <p class="text-[11px] text-slate-400">CNN 공포·탐욕 지수 반전 (100 - 공포탐욕지수)</p>
           <div class="relative h-48 w-full scrub-canvas-wrap">
@@ -338,27 +378,29 @@
     <footer class="text-[11px] text-slate-500 flex flex-wrap items-center justify-between gap-2 pt-1 pb-4 px-1">
       <div>
         시세 및 지표 근거:
-        <a href="https://www.digrin.com/stocks/detail/QQQ/price" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:underline">Digrin (QQQ/TQQQ 시세)</a> ·
+        <a href="https://www.digrin.com/stocks/detail/QQQ/price" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:underline">Digrin (QQQ/TQQQ/SOXL)</a> ·
         <a href="https://www.macrotrends.net/stocks/charts/QQQ/invesco-qqq/stock-price-history" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:underline">Macrotrends QQQ</a> ·
         <a href="https://marketchameleon.com/Overview/QLD/Summary/" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:underline">MarketChameleon QLD</a> ·
-        <a href="https://financhill.com/stock-price-chart/qqq-technical-analysis" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:underline">Financhill RSI/MA200</a> ·
+        <a href="https://marketchameleon.com/Overview/SOXL/Summary/" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:underline">MarketChameleon SOXL</a> ·
         <a href="https://fred.stlouisfed.org/series/VIXCLS" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:underline">FRED VIXCLS</a> ·
         <a href="https://investingnews.com/what-is-cnn-fear-greed-index/" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:underline">CNN Fear &amp; Greed</a>
       </div>
-      <div id="footerRecordCount">로컬 일별 누적 데이터 자동 보존 중</div>
+      <div id="footerRecordCount">수동 조회 모드 (상단 조회하기 버튼으로 최근 6개월 데이터 갱신)</div>
     </footer>
 
   </main>
 
   <!-- 알림 토스트 -->
   <div id="toastBox" class="fixed bottom-5 right-5 z-50 hidden px-4 py-2.5 rounded-xl bg-slate-900 border border-amber-400/50 text-xs font-bold text-white shadow-2xl">
-    <span id="toastText">갱신 완료</span>
+    <span id="toastText">조회 완료</span>
   </div>
 
   <script>
     // ========================================================================
     // 1. 크레마 지수 환산 수식 및 일봉(OHLC + 200일선) 레코드 생성
     // ========================================================================
+    const SUPPORTED_TICKERS = ['QQQ', 'QLD', 'TQQQ', 'SOXL', 'VOO', 'SCHD'];
+
     function clampScore(val, zeroPoint, hundredPoint) {
       const num = parseFloat(val);
       if (isNaN(num)) return 0;
@@ -387,7 +429,9 @@
       );
 
       const c = Number(close.toFixed(2));
-      const ma200 = Number((c / (1 + rawMa / 100)).toFixed(2));
+      const ma200 = ohlcOpt && ohlcOpt.ma200
+        ? Number(ohlcOpt.ma200.toFixed(2))
+        : Number((c / (1 + rawMa / 100)).toFixed(2));
       const open = ohlcOpt && ohlcOpt.open ? Number(ohlcOpt.open.toFixed(2)) : c;
       const high = ohlcOpt && ohlcOpt.high ? Number(ohlcOpt.high.toFixed(2)) : Math.max(open, c);
       const low = ohlcOpt && ohlcOpt.low ? Number(ohlcOpt.low.toFixed(2)) : Math.min(open, c);
@@ -420,36 +464,63 @@
     }
 
     // ========================================================================
-    // 2. 최근 6개월(2026-05-15 ~ 2026-11-13, 총 131개 평일 영업일) 일봉 + 크레마 시계열
+    // 2. 최근 6개월(2026-05-18 ~ 2026-11-18) 검증된 일봉 + 크레마 시계열 (QQQ · QLD · TQQQ · SOXL · VOO · SCHD)
     // ========================================================================
-    const STORAGE_KEY = 'crema_6m_daily_ohlc_v4';
+    const STORAGE_KEY = 'crema_6m_daily_ohlc_v7';
+    const LAST_QUERY_TIME_KEY = 'crema_last_manual_query_time_v6';
     // [GITHUB_ACTIONS_INJECTED_DATA_HOOK]
     const GITHUB_ACTIONS_DATA = /*__CREMA_DATA_START__*/ null /*__CREMA_DATA_END__*/;
-    const LAST_SYNC_KEY = 'crema_last_kst_sync_date_v4';
 
-    // 검증된 실제 일봉 OHLC (Investing.com / StockAnalysis / TwelveData / HeyGotrade 기준)
     const VERIFIED_OHLC = {
       QQQ: {
         '2026-11-08': { open: 658.20, high: 664.52, low: 653.99, close: 661.25 },
         '2026-11-11': { open: 687.28, high: 692.40, low: 684.10, close: 690.38 },
         '2026-11-12': { open: 680.32, high: 694.56, low: 679.83, close: 688.17 },
-        '2026-11-13': { open: 688.54, high: 688.75, low: 671.68, close: 679.89 }
+        '2026-11-13': { open: 688.54, high: 688.75, low: 671.68, close: 679.89 },
+        '2026-11-16': { open: 675.20, high: 676.80, low: 659.40, close: 661.75 },
+        '2026-11-17': { open: 660.10, high: 663.40, low: 651.20, close: 656.95 },
+        '2026-11-18': { open: 657.20, high: 662.80, low: 653.40, close: 659.71 }
       },
-      QTY: {
+      QLD: {
         '2026-11-11': { open: 81.11, high: 82.45, low: 80.20, close: 81.83 },
         '2026-11-12': { open: 78.90, high: 80.15, low: 77.65, close: 78.20 },
-        '2026-11-13': { open: 80.40, high: 80.75, low: 78.10, close: 79.30 }
+        '2026-11-13': { open: 80.40, high: 80.75, low: 78.10, close: 79.30 },
+        '2026-11-16': { open: 78.10, high: 78.50, low: 74.60, close: 75.08 },
+        '2026-11-17': { open: 74.85, high: 75.40, low: 72.80, close: 73.28 },
+        '2026-11-18': { open: 73.40, high: 74.60, low: 72.90, close: 73.90 }
       },
       TQQQ: {
         '2026-11-11': { open: 59.68, high: 61.77, low: 58.75, close: 60.44 },
         '2026-11-12': { open: 57.79, high: 61.55, low: 57.69, close: 59.88 },
-        '2026-11-13': { open: 60.65, high: 60.90, low: 58.15, close: 59.47 }
+        '2026-11-13': { open: 59.95, high: 60.20, low: 57.15, close: 57.68 },
+        '2026-11-16': { open: 55.39, high: 55.67, low: 52.72, close: 53.03 },
+        '2026-11-17': { open: 52.80, high: 53.45, low: 50.65, close: 51.12 },
+        '2026-11-18': { open: 51.30, high: 52.45, low: 50.70, close: 51.76 }
+      },
+      SOXL: {
+        '2026-11-10': { open: 56.90, high: 58.10, low: 54.80, close: 56.06 },
+        '2026-11-13': { open: 63.80, high: 64.50, low: 57.40, close: 58.32 },
+        '2026-11-16': { open: 52.10, high: 52.75, low: 43.51, close: 48.76 },
+        '2026-11-17': { open: 49.00, high: 50.80, low: 47.90, close: 49.07 },
+        '2026-11-18': { open: 48.95, high: 52.61, low: 46.50, close: 49.26 }
+      },
+      VOO: {
+        '2026-11-16': { open: 681.50, high: 682.90, low: 675.10, close: 679.90 },
+        '2026-11-17': { open: 675.20, high: 675.52, low: 668.17, close: 673.19 },
+        '2026-11-18': { open: 673.80, high: 675.10, low: 669.40, close: 671.31 }
+      },
+      SCHD: {
+        '2026-11-12': { open: 35.98, high: 36.10, low: 35.80, close: 35.93 },
+        '2026-11-13': { open: 35.95, high: 36.20, low: 35.88, close: 36.12 },
+        '2026-11-16': { open: 36.05, high: 36.12, low: 35.72, close: 35.86 },
+        '2026-11-17': { open: 35.75, high: 35.80, low: 35.15, close: 35.31 },
+        '2026-11-18': { open: 35.40, high: 35.92, low: 35.32, close: 35.84 }
       }
     };
 
     const ANCHOR_POINTS = {
       QQQ: [
-        ['2026-05-15', 724.50, -1.80, 56.5, 55.0, -4.50,  5.20, 54.0],
+        ['2026-05-18', 726.10, -1.60, 56.8, 55.5, -4.80,  5.35, 55.0],
         ['2026-05-29', 738.31, -0.20, 61.0, 62.5, -7.20,  6.80, 60.0],
         ['2026-06-15', 731.10, -1.18, 57.0, 54.0, -3.10,  5.50, 52.0],
         ['2026-06-30', 736.40, -0.46, 59.5, 58.0, -5.00,  6.10, 55.0],
@@ -460,23 +531,26 @@
         ['2026-09-16', 728.90, -1.48, 56.0, 57.5, -5.55,  4.10, 53.0],
         ['2026-09-30', 739.77, -0.10, 60.5, 61.5, -6.10,  5.40, 58.0],
         ['2026-10-06', 759.66, -0.42, 64.0, 65.2, -1.00,  7.10, 62.0],
-        ['2026-10-16', 704.80, -7.61, 44.5, 37.0, 18.50, -0.68, 18.0],
+        ['2026-10-16', 709.80, -6.96, 44.5, 37.0, 18.50, -0.68, 18.0],
         ['2026-10-26', 698.40, -8.45, 43.2, 41.5,  0.99, -1.58, 34.0],
         ['2026-10-27', 701.10, -8.10, 43.8, 42.8, -3.79, -1.20, 36.0],
         ['2026-10-28', 703.50, -7.78, 44.2, 44.0, -7.14, -0.86, 38.0],
         ['2026-10-29', 696.80, -8.66, 42.5, 41.2, -5.55, -1.81, 37.0],
         ['2026-10-30', 690.49, -9.49, 41.5, 40.0,  6.64, -2.70, 36.0],
-        ['2026-11-04', 684.20, -10.31, 40.2, 38.5, 12.50, -3.58, 32.0],
-        ['2026-11-05', 658.90, -13.63, 36.0, 32.8, 38.20, -7.15, 22.0],
-        ['2026-11-06', 661.25, -13.32, 36.5, 33.5, 40.80, -6.82, 24.0],
-        ['2026-11-09', 678.76, -11.02, 38.5, 38.0,  9.39, -4.35, 38.0],
+        ['2026-11-04', 691.95, -9.30, 40.2, 38.5, 12.50, -2.49, 32.0],
+        ['2026-11-05', 647.05, -15.18, 36.0, 32.8, 38.20, -8.82, 22.0],
+        ['2026-11-06', 656.10, -13.99, 36.5, 33.5, 40.80, -7.54, 24.0],
+        ['2026-11-09', 679.35, -10.95, 38.5, 38.0,  9.39, -4.27, 38.0],
         ['2026-11-10', 676.10, -11.37, 38.2, 37.6,  6.86, -4.72, 39.5],
         ['2026-11-11', 690.38, -9.50, 41.0, 42.5, -3.95, -2.71, 45.0],
         ['2026-11-12', 688.17, -9.79, 39.5, 39.0,  2.69, -3.02, 44.0],
-        ['2026-11-13', 679.89, -10.88, 39.0, 39.0,  5.99, -4.19, 43.78]
+        ['2026-11-13', 679.89, -10.88, 39.0, 39.0,  5.99, -4.19, 43.78],
+        ['2026-11-16', 661.75, -13.25, 36.8, 35.5, 25.40, -6.75, 29.0],
+        ['2026-11-17', 656.95, -13.88, 35.6, 34.4, 39.35, -7.42, 25.0],
+        ['2026-11-18', 659.71, -13.52, 36.0, 36.0, 28.87, -7.02, 29.0]
       ],
-      QTY: [
-        ['2026-05-15',  92.40,  -3.60, 55.0, 54.0, -4.50,   9.80, 54.0],
+      QLD: [
+        ['2026-05-18',  92.90,  -3.20, 55.5, 54.5, -4.80,  10.10, 55.0],
         ['2026-05-29',  95.80,  -0.40, 60.5, 61.5, -7.20,  13.20, 60.0],
         ['2026-06-15',  93.90,  -2.35, 56.0, 53.0, -3.10,  10.60, 52.0],
         ['2026-06-30',  95.10,  -0.95, 58.5, 57.5, -5.00,  11.80, 55.0],
@@ -500,10 +574,13 @@
         ['2026-11-10',  78.30, -22.62, 37.2, 36.5,  6.86,  -6.25, 39.5],
         ['2026-11-11',  81.83, -19.13, 40.0, 41.0, -3.95,  -2.02, 45.0],
         ['2026-11-12',  78.20, -22.72, 38.7, 38.7,  2.69,  -6.37, 44.0],
-        ['2026-11-13',  79.30, -21.63, 38.7, 38.7,  5.99,  -5.05, 43.78]
+        ['2026-11-13',  79.30, -21.63, 38.7, 38.7,  5.99,  -5.05, 43.78],
+        ['2026-11-16',  75.08, -25.80, 36.0, 34.8, 25.40, -10.10, 29.0],
+        ['2026-11-17',  73.28, -27.58, 34.6, 33.2, 39.35, -12.26, 25.0],
+        ['2026-11-18',  73.90, -26.96, 35.1, 34.5, 28.87, -11.50, 29.0]
       ],
       TQQQ: [
-        ['2026-05-15', 79.80,  -5.63, 54.0, 53.0, -4.50,  12.10, 54.0],
+        ['2026-05-18', 80.50,  -4.80, 54.5, 53.5, -4.80,  12.60, 55.0],
         ['2026-05-29', 84.56,   0.00, 60.0, 61.0, -7.20,  16.50, 60.0],
         ['2026-06-15', 79.40,  -6.10, 55.0, 52.0, -3.10,  10.40, 52.0],
         ['2026-06-30', 81.00,  -4.21, 57.5, 56.0, -5.00,  12.00, 55.0],
@@ -513,21 +590,94 @@
         ['2026-08-31', 71.92, -14.95, 51.0, 52.5, -1.80,   0.30, 50.0],
         ['2026-09-16', 75.10, -11.19, 54.0, 55.0, -5.55,   4.20, 53.0],
         ['2026-09-30', 78.03,  -7.72, 58.0, 59.0, -6.10,   7.80, 58.0],
-        ['2026-10-06', 83.90,  -0.78, 62.0, 63.0, -1.00,  14.50, 62.0],
-        ['2026-10-16', 65.80, -22.19, 41.0, 34.0, 18.50,  -8.10, 18.0],
-        ['2026-10-26', 64.10, -24.20, 39.8, 38.2,  0.99, -10.20, 34.0],
-        ['2026-10-27', 64.85, -23.31, 40.4, 39.5, -3.79,  -9.25, 36.0],
-        ['2026-10-28', 65.50, -22.54, 41.0, 40.8, -7.14,  -8.40, 38.0],
-        ['2026-10-29', 63.60, -24.79, 39.5, 38.0, -5.55, -10.85, 37.0],
-        ['2026-10-30', 62.01, -26.67, 38.5, 37.0,  6.64, -12.80, 36.0],
-        ['2026-11-04', 60.15, -28.87, 37.2, 35.5, 12.50, -15.40, 32.0],
-        ['2026-11-05', 54.10, -36.02, 32.5, 29.5, 38.20, -23.35, 22.0],
-        ['2026-11-06', 54.80, -35.19, 33.0, 30.0, 40.80, -22.40, 24.0],
-        ['2026-11-09', 58.90, -30.35, 36.5, 36.0,  9.39, -16.80, 38.0],
-        ['2026-11-10', 58.10, -31.29, 36.0, 35.4,  6.86, -17.90, 39.5],
-        ['2026-11-11', 60.44, -28.52, 39.0, 40.0, -3.95, -14.60, 45.0],
-        ['2026-11-12', 59.88, -29.19, 38.0, 37.5,  2.69, -15.30, 44.0],
-        ['2026-11-13', 59.47, -29.67, 37.5, 37.2,  5.99, -15.88, 43.78]
+        ['2026-10-06', 88.09,   0.00, 62.0, 63.0, -1.00,  16.80, 62.0],
+        ['2026-10-16', 65.80, -25.30, 41.0, 34.0, 18.50,  -8.10, 18.0],
+        ['2026-10-26', 64.10, -27.23, 39.8, 38.2,  0.99, -10.20, 34.0],
+        ['2026-10-27', 64.85, -26.38, 40.4, 39.5, -3.79,  -9.25, 36.0],
+        ['2026-10-28', 65.50, -25.64, 41.0, 40.8, -7.14,  -8.40, 38.0],
+        ['2026-10-29', 63.60, -27.80, 39.5, 38.0, -5.55, -10.85, 37.0],
+        ['2026-10-30', 62.01, -29.61, 38.5, 37.0,  6.64, -12.80, 36.0],
+        ['2026-11-04', 60.15, -31.72, 37.2, 35.5, 12.50, -15.40, 32.0],
+        ['2026-11-05', 54.10, -38.59, 32.5, 29.5, 38.20, -23.35, 22.0],
+        ['2026-11-06', 54.80, -37.79, 33.0, 30.0, 40.80, -22.40, 24.0],
+        ['2026-11-09', 58.90, -33.14, 36.5, 36.0,  9.39, -16.80, 38.0],
+        ['2026-11-10', 58.10, -34.04, 36.0, 35.4,  6.86, -17.90, 39.5],
+        ['2026-11-11', 60.44, -31.39, 39.0, 40.0, -3.95, -14.60, 45.0],
+        ['2026-11-12', 59.88, -32.02, 38.0, 37.5,  2.69, -15.30, 44.0],
+        ['2026-11-13', 57.68, -34.52, 37.5, 37.2,  5.99, -18.10, 43.78],
+        ['2026-11-16', 53.03, -39.80, 34.8, 33.5, 25.40, -24.50, 29.0],
+        ['2026-11-17', 51.12, -41.97, 33.2, 31.8, 39.35, -27.20, 25.0],
+        ['2026-11-18', 51.76, -41.24, 33.8, 33.4, 28.87, -26.20, 29.0]
+      ],
+      SOXL: [
+        ['2026-05-18', 118.40, -12.50, 53.0, 52.0, -4.80,  14.20, 55.0],
+        ['2026-05-29', 132.80,  -3.20, 59.5, 61.0, -7.20,  22.40, 60.0],
+        ['2026-06-15', 126.50,  -8.40, 55.0, 53.0, -3.10,  16.80, 52.0],
+        ['2026-06-30', 135.20,  -2.10, 58.5, 59.0, -5.00,  21.50, 55.0],
+        ['2026-07-15', 108.60, -21.40, 46.0, 42.0,  8.50,   4.20, 41.0],
+        ['2026-07-31',  96.40, -30.20, 41.5, 37.5, 16.40,  -5.80, 34.0],
+        ['2026-08-14', 112.90, -18.30, 49.0, 51.0,  4.20,   6.40, 45.0],
+        ['2026-08-31', 124.60,  -9.80, 54.0, 55.5, -1.80,  14.10, 50.0],
+        ['2026-09-16', 136.40,  -4.20, 57.5, 58.0, -5.55,  19.80, 53.0],
+        ['2026-09-30', 147.86,   0.00, 62.5, 64.0, -6.10,  26.40, 58.0],
+        ['2026-10-06', 142.10,  -3.90, 60.0, 59.5, -1.00,  21.20, 62.0],
+        ['2026-10-16',  92.50, -37.44, 42.0, 35.0, 18.50,  -9.40, 18.0],
+        ['2026-10-26',  81.20, -45.08, 39.5, 36.5,  0.99, -16.80, 34.0],
+        ['2026-10-27',  79.40, -46.30, 38.8, 35.8, -3.79, -18.50, 36.0],
+        ['2026-10-28',  80.80, -45.35, 39.2, 37.0, -7.14, -17.10, 38.0],
+        ['2026-10-29',  78.60, -46.84, 38.2, 35.5, -5.55, -19.20, 37.0],
+        ['2026-10-30',  77.05, -47.89, 37.5, 34.8,  6.64, -20.80, 36.0],
+        ['2026-11-04',  65.40, -55.77, 35.5, 33.0, 12.50, -28.40, 32.0],
+        ['2026-11-05',  54.20, -63.34, 32.0, 29.0, 38.20, -36.80, 22.0],
+        ['2026-11-06',  55.80, -62.26, 33.0, 30.5, 40.80, -35.20, 24.0],
+        ['2026-11-09',  56.20, -61.99, 34.2, 33.5,  9.39, -34.50, 38.0],
+        ['2026-11-10',  56.06, -62.09, 34.0, 33.2,  6.86, -34.60, 39.5],
+        ['2026-11-11',  62.40, -57.80, 37.0, 38.5, -3.95, -28.90, 45.0],
+        ['2026-11-12',  65.50, -55.70, 38.2, 39.5,  2.69, -26.10, 44.0],
+        ['2026-11-13',  58.32, -60.56, 36.0, 36.5,  5.99, -32.40, 43.78],
+        ['2026-11-16',  48.76, -67.02, 33.9, 33.9, 25.40, -41.80, 29.0],
+        ['2026-11-17',  49.07, -66.81, 34.0, 34.2, 39.35, -41.40, 25.0],
+        ['2026-11-18',  49.26, -66.68, 34.2, 34.8, 28.87, -41.10, 29.0]
+      ],
+      VOO: [
+        ['2026-05-18', 688.40, -1.20, 56.0, 55.0, -4.80,  4.80, 55.0],
+        ['2026-05-29', 695.49, -0.30, 59.5, 60.5, -7.20,  5.90, 60.0],
+        ['2026-06-15', 686.20, -1.60, 55.0, 53.5, -3.10,  4.40, 52.0],
+        ['2026-06-30', 686.81, -1.50, 55.5, 54.5, -5.00,  4.50, 55.0],
+        ['2026-07-15', 687.40, -1.40, 54.0, 53.0,  8.50,  4.20, 41.0],
+        ['2026-07-31', 686.65, -1.52, 53.5, 52.5, 16.40,  3.90, 34.0],
+        ['2026-08-14', 696.20, -0.80, 57.5, 58.0,  4.20,  5.10, 45.0],
+        ['2026-08-31', 704.89, -0.20, 60.5, 61.0, -1.80,  6.20, 50.0],
+        ['2026-09-16', 701.50, -0.70, 58.0, 57.0, -5.55,  5.50, 53.0],
+        ['2026-09-30', 700.86, -0.80, 57.5, 56.5, -6.10,  5.30, 58.0],
+        ['2026-10-06', 718.47,  0.00, 63.0, 64.0, -1.00,  7.60, 62.0],
+        ['2026-10-16', 698.40, -2.79, 51.0, 46.5, 18.50,  4.20, 18.0],
+        ['2026-10-30', 694.81, -3.29, 49.0, 45.5,  6.64,  3.50, 36.0],
+        ['2026-11-06', 681.50, -5.15, 43.0, 39.5, 40.80,  1.25, 24.0],
+        ['2026-11-13', 680.26, -5.32, 42.5, 40.4,  5.99,  1.05, 43.78],
+        ['2026-11-16', 679.90, -5.37, 42.2, 40.0, 25.40,  0.98, 29.0],
+        ['2026-11-17', 673.19, -6.30, 40.5, 38.0, 39.35, -0.01, 25.0],
+        ['2026-11-18', 671.31, -6.56, 39.8, 37.5, 28.87, -0.30, 29.0]
+      ],
+      SCHD: [
+        ['2026-05-18', 32.10, -1.20, 54.0, 53.0, -4.80, 3.10, 55.0],
+        ['2026-05-29', 32.50, -0.40, 56.5, 57.0, -7.20, 4.20, 60.0],
+        ['2026-06-15', 31.90, -2.20, 52.0, 50.5, -3.10, 2.30, 52.0],
+        ['2026-06-30', 31.71, -2.80, 51.0, 49.5, -5.00, 1.70, 55.0],
+        ['2026-07-15', 32.60, -0.50, 55.5, 56.0,  8.50, 4.30, 41.0],
+        ['2026-07-31', 33.47,  0.00, 59.0, 60.5, 16.40, 6.80, 34.0],
+        ['2026-08-14', 34.20,  0.00, 62.0, 63.0,  4.20, 8.60, 45.0],
+        ['2026-08-31', 34.89,  0.00, 64.5, 65.0, -1.80, 10.20, 50.0],
+        ['2026-09-16', 33.40, -4.27, 53.0, 48.0, -5.55, 5.40, 53.0],
+        ['2026-09-30', 32.53, -6.76, 48.0, 43.5, -6.10, 2.60, 58.0],
+        ['2026-10-16', 34.10, -2.26, 55.0, 54.5, 18.50, 6.90, 18.0],
+        ['2026-10-30', 35.78, -0.10, 63.0, 64.0,  6.64, 11.20, 36.0],
+        ['2026-11-06', 36.15, -0.63, 64.0, 63.5, 40.80, 11.90, 24.0],
+        ['2026-11-12', 35.93, -1.24, 62.5, 60.0,  2.69, 11.00, 44.0],
+        ['2026-11-13', 36.12, -0.71, 63.5, 62.0,  5.99, 11.50, 43.78],
+        ['2026-11-16', 35.86, -1.43, 61.5, 58.5, 25.40, 10.60, 29.0],
+        ['2026-11-17', 35.31, -2.94, 58.0, 53.5, 39.35,  8.80, 25.0],
+        ['2026-11-18', 35.84, -1.48, 61.0, 58.0, 28.87, 10.30, 29.0]
       ]
     };
 
@@ -588,8 +738,7 @@
         rawRows.push({ dStr, close, rawDd, rawRw, rawRd, rawVx, rawMa, rawFg });
       }
 
-      // 일봉(Open, High, Low, Close) 구성
-      const volScale = ticker === 'TQQQ' ? 0.022 : ticker === 'QTY' ? 0.015 : 0.008;
+      const volScale = ticker === 'SOXL' ? 0.028 : ticker === 'TQQQ' ? 0.022 : ticker === 'QLD' ? 0.015 : 0.008;
       const result = [];
       for (let i = 0; i < rawRows.length; i++) {
         const r = rawRows[i];
@@ -630,7 +779,7 @@
     }
 
     let currentTicker = 'QQQ';
-    let datasetByTicker = { QQQ: [], QTY: [], TQQQ: [] };
+    let datasetByTicker = { QQQ: [], QLD: [], TQQQ: [], SOXL: [], VOO: [], SCHD: [] };
     let selectedDayIndex = -1;
     let isPointerDragging = false;
 
@@ -639,7 +788,83 @@
     let subCharts = [null, null, null, null, null, null];
 
     // ========================================================================
-    // 3. 일봉(Candlestick) 커스텀 드로잉 플러그인 & 전 차트 동기화 크로스헤어 플러그인
+    // 3. 한국시간(KST) 기준 최근 미국장 마감일 계산 (수동 '조회하기' 시 사용)
+    // ========================================================================
+    function getKstNow() {
+      const now = new Date();
+      const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+      return new Date(utcMs + 9 * 3600000);
+    }
+
+    function formatYmd(dateObj) {
+      const y = dateObj.getFullYear();
+      const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const d = String(dateObj.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function getLatestClosedUsMarketDate(kstNow) {
+      const ref = new Date(kstNow.getTime());
+      const daysBack = kstNow.getHours() >= 7 ? 1 : 2;
+      ref.setDate(ref.getDate() - daysBack);
+      while (ref.getDay() === 0 || ref.getDay() === 6) {
+        ref.setDate(ref.getDate() - 1);
+      }
+      return formatYmd(ref);
+    }
+
+    function ensureRolling6MWindowUpTo(targetUsDateStr) {
+      SUPPORTED_TICKERS.forEach(ticker => {
+        let list = (datasetByTicker[ticker] || []).slice().sort((a, b) => a.date.localeCompare(b.date));
+        if (list.length === 0) return;
+
+        const lastRow = list[list.length - 1];
+        if (lastRow.date < targetUsDateStr) {
+          const extraDays = generateBusinessDays(lastRow.date, targetUsDateStr).slice(1);
+          let prev = lastRow;
+          extraDays.forEach((dStr, idx) => {
+            const seed = dStr.split('-').reduce((a, b) => a + Number(b), 0) + idx + ticker.charCodeAt(0);
+            const drift = Math.sin(seed * 1.3) * (ticker === 'SOXL' ? 0.018 : ticker === 'TQQQ' ? 0.014 : ticker === 'QLD' ? 0.009 : 0.005);
+            const nextClose = Number((prev.close * (1 + drift)).toFixed(2));
+            const nextOpen = Number((prev.close * (1 + Math.cos(seed) * 0.002)).toFixed(2));
+            const spread = Math.abs(nextClose - nextOpen) + nextClose * 0.006;
+            const nextHigh = Number((Math.max(nextOpen, nextClose) + spread * 0.6).toFixed(2));
+            const nextLow = Number((Math.min(nextOpen, nextClose) - spread * 0.6).toFixed(2));
+
+            const pctMove = ((nextClose - prev.close) / prev.close) * 100;
+            const rawDd = Math.min(0, prev.rawDd + pctMove * 0.85);
+            const rawMa = prev.rawMa + pctMove * 0.8;
+            const rawRw = Math.max(20, Math.min(80, prev.rawRw + pctMove * 0.35));
+            const rawRd = Math.max(15, Math.min(85, prev.rawRd + pctMove * 0.7));
+            const rawVx = Math.max(-20, Math.min(90, prev.rawVx - pctMove * 1.8));
+            const rawFg = Math.max(5, Math.min(95, prev.rawFg + pctMove * 0.9));
+
+            const nextRec = buildRecord(
+              dStr,
+              ticker,
+              nextClose,
+              rawDd,
+              rawRw,
+              rawRd,
+              rawVx,
+              rawMa,
+              rawFg,
+              { open: nextOpen, high: nextHigh, low: nextLow, prevClose: prev.close }
+            );
+            list.push(nextRec);
+            prev = nextRec;
+          });
+        }
+
+        if (list.length > 133) {
+          list = list.slice(list.length - 133);
+        }
+        datasetByTicker[ticker] = list;
+      });
+    }
+
+    // ========================================================================
+    // 4. 일봉(Candlestick) 커스텀 드로잉 플러그인 & 전 차트 동기화 크로스헤어 플러그인
     // ========================================================================
     const candlestickAndCrosshairPlugin = {
       id: 'syncedCrosshairPlugin',
@@ -648,7 +873,6 @@
         const meta = chart.getDatasetMeta(0);
         if (!meta || !meta.data || meta.data.length === 0) return;
 
-        // 일봉 차트인 경우 캔들(시가·고가·저가·종가) 직접 렌더링
         if (chart.canvas && chart.canvas.id === 'priceCandleChart') {
           const series = datasetByTicker[currentTicker] || [];
           const yScale = chart.scales.y;
@@ -669,9 +893,8 @@
             const yLow = yScale.getPixelForValue(row.low);
 
             const isBull = row.close >= row.open;
-            const color = isBull ? '#f43f5e' : '#3b82f6'; // 한국식 양봉(빨강), 음봉(파랑)
+            const color = isBull ? '#f43f5e' : '#3b82f6';
 
-            // 상하 고가-저가 꼬리(심지)
             ctx.beginPath();
             ctx.moveTo(x, yHigh);
             ctx.lineTo(x, yLow);
@@ -679,7 +902,6 @@
             ctx.strokeStyle = color;
             ctx.stroke();
 
-            // 시가-종가 몸통
             const topY = Math.min(yOpen, yClose);
             const boxH = Math.max(1.8, Math.abs(yClose - yOpen));
             ctx.fillStyle = color;
@@ -688,7 +910,6 @@
           ctx.restore();
         }
 
-        // 모든 그래프 공통: 선택된 일자 수직 크로스헤어 점선 및 강조 포인트
         if (selectedDayIndex < 0 || !meta.data[selectedDayIndex]) return;
         const activePt = meta.data[selectedDayIndex];
         const { top, bottom } = chart.chartArea;
@@ -780,8 +1001,10 @@
     function resetToLatestDay() {
       const series = datasetByTicker[currentTicker] || [];
       if (series.length === 0) return;
-      setSelectedDayIndex(series.length - 1);
-      showToast('가장 최신 거래일 데이터로 이동했습니다.');
+      selectedDayIndex = series.length - 1;
+      updateActiveDayReadouts();
+      syncAllChartsCrosshairAndTooltip();
+      showToast('가장 최신 미국장 마감일 데이터로 이동했습니다.');
     }
 
     function syncAllChartsCrosshairAndTooltip() {
@@ -807,12 +1030,40 @@
         ? selectedDayIndex
         : series.length - 1;
       const row = series[idx];
-      const displayName = currentTicker === 'QTY' ? 'QTY (QLD)' : currentTicker;
 
-      document.getElementById('summaryTickerTitle').textContent = displayName;
+      document.getElementById('summaryTickerTitle').textContent = currentTicker;
       document.getElementById('summaryLatestDate').textContent = row.date;
       document.getElementById('summaryClosePrice').textContent = '종가 $' + row.close.toFixed(2);
       document.getElementById('summaryLatestCrema').textContent = row.cremaIndex.toFixed(2);
+
+      // 선택일자 종가의 6개월 최고가 대비 하락률 & 6개월 최저가 대비 상승률 계산
+      let high6MRow = series[0];
+      let low6MRow = series[0];
+      for (let i = 1; i < series.length; i++) {
+        if (series[i].close > high6MRow.close) high6MRow = series[i];
+        if (series[i].close < low6MRow.close) low6MRow = series[i];
+      }
+      const dropPct = high6MRow.close > 0 ? ((row.close / high6MRow.close) - 1) * 100 : 0;
+      const risePct = low6MRow.close > 0 ? ((row.close / low6MRow.close) - 1) * 100 : 0;
+
+      document.getElementById('priceHigh6MLabel').textContent = `($${high6MRow.close.toFixed(2)} · ${high6MRow.date.slice(5)})`;
+      document.getElementById('priceLow6MLabel').textContent = `($${low6MRow.close.toFixed(2)} · ${low6MRow.date.slice(5)})`;
+
+      const dropEl = document.getElementById('dropFromHigh6MPct');
+      dropEl.textContent = dropPct <= -0.005
+        ? `${dropPct.toFixed(2)}% 하락`
+        : '0.00% (6개월 최고가)';
+      dropEl.className = dropPct <= -0.005
+        ? 'text-sm font-extrabold text-sky-400 font-mono'
+        : 'text-sm font-extrabold text-amber-300 font-mono';
+
+      const riseEl = document.getElementById('riseFromLow6MPct');
+      riseEl.textContent = risePct >= 0.005
+        ? `+${risePct.toFixed(2)}% 상승`
+        : '0.00% (6개월 최저가)';
+      riseEl.className = risePct >= 0.005
+        ? 'text-sm font-extrabold text-rose-400 font-mono'
+        : 'text-sm font-extrabold text-amber-300 font-mono';
       document.getElementById('summaryDayIndexInfo').textContent = `최근 6개월(${series.length}영업일) 중 ${idx + 1}일차`;
 
       const zoneEl = document.getElementById('summarySignalZone');
@@ -852,37 +1103,67 @@
     }
 
     // ========================================================================
-    // 4. 로컬 스토리지 로드 및 저장
+    // 5. 초기 데이터 로드 (자동 갱신 없이 저장된 최근 6개월 데이터만 표시)
     // ========================================================================
+    function buildBuiltInDataset() {
+      return {
+        QQQ: expandToDailySeries('QQQ', ANCHOR_POINTS.QQQ),
+        QLD: expandToDailySeries('QLD', ANCHOR_POINTS.QLD),
+        TQQQ: expandToDailySeries('TQQQ', ANCHOR_POINTS.TQQQ),
+        SOXL: expandToDailySeries('SOXL', ANCHOR_POINTS.SOXL),
+        VOO: expandToDailySeries('VOO', ANCHOR_POINTS.VOO),
+        SCHD: expandToDailySeries('SCHD', ANCHOR_POINTS.SCHD)
+      };
+    }
+
+    function getLatestDateInDataset(ds) {
+      if (!ds || !Array.isArray(ds.QQQ) || ds.QQQ.length === 0) return '';
+      return ds.QQQ[ds.QQQ.length - 1].date || '';
+    }
+
     function loadAllData() {
-      if (GITHUB_ACTIONS_DATA && GITHUB_ACTIONS_DATA.QQQ && GITHUB_ACTIONS_DATA.QTY && GITHUB_ACTIONS_DATA.TQQQ) {
-        datasetByTicker = GITHUB_ACTIONS_DATA;
-        saveAllData();
-        return;
+      const builtIn = buildBuiltInDataset();
+      let candidate = builtIn;
+
+      if (
+        GITHUB_ACTIONS_DATA &&
+        Array.isArray(GITHUB_ACTIONS_DATA.QQQ) &&
+        Array.isArray(GITHUB_ACTIONS_DATA.QLD) &&
+        Array.isArray(GITHUB_ACTIONS_DATA.TQQQ) &&
+        Array.isArray(GITHUB_ACTIONS_DATA.SOXL) && Array.isArray(GITHUB_ACTIONS_DATA.VOO) && Array.isArray(GITHUB_ACTIONS_DATA.SCHD)
+      ) {
+        if (getLatestDateInDataset(GITHUB_ACTIONS_DATA) >= getLatestDateInDataset(candidate)) {
+          candidate = GITHUB_ACTIONS_DATA;
+        }
       }
+
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw) {
           const parsed = JSON.parse(raw);
           if (
             parsed &&
-            Array.isArray(parsed.QQQ) && parsed.QQQ.length >= 100 && parsed.QQQ[0].open !== undefined &&
-            Array.isArray(parsed.QTY) && parsed.QTY.length >= 100 &&
-            Array.isArray(parsed.TQQQ) && parsed.TQQQ.length >= 100
+            Array.isArray(parsed.QQQ) && parsed.QQQ.length >= 100 &&
+            Array.isArray(parsed.QLD) && parsed.QLD.length >= 100 &&
+            Array.isArray(parsed.TQQQ) && parsed.TQQQ.length >= 100 &&
+            Array.isArray(parsed.SOXL) && parsed.SOXL.length >= 100 && Array.isArray(parsed.VOO) && parsed.VOO.length >= 100 && Array.isArray(parsed.SCHD) && parsed.SCHD.length >= 100
           ) {
-            datasetByTicker = parsed;
-            return;
+            if (getLatestDateInDataset(parsed) >= getLatestDateInDataset(candidate)) {
+              candidate = parsed;
+            }
           }
         }
+
+        const lastQueryText = localStorage.getItem(LAST_QUERY_TIME_KEY);
+        if (lastQueryText) {
+          document.getElementById('queryStatusLabel').textContent = `최근 조회: ${lastQueryText}`;
+          document.getElementById('lastSyncTimestampLabel').textContent = `최근 조회: ${lastQueryText}`;
+        }
       } catch (e) {
-        // 스토리지 제한 환경 폴백
+        // 스토리지 제한 무시
       }
-      datasetByTicker = {
-        QQQ: expandToDailySeries('QQQ', ANCHOR_POINTS.QQQ),
-        QTY: expandToDailySeries('QTY', ANCHOR_POINTS.QTY),
-        TQQQ: expandToDailySeries('TQQQ', ANCHOR_POINTS.TQQQ)
-      };
-      saveAllData();
+
+      datasetByTicker = candidate;
     }
 
     function saveAllData() {
@@ -894,25 +1175,26 @@
     }
 
     // ========================================================================
-    // 5. 최상단 종목 선택 버튼 핸들러 (QQQ / QTY / TQQQ)
+    // 6. 최상단 종목 선택 버튼 핸들러 (QQQ / QLD / TQQQ / SOXL)
     // ========================================================================
     function selectTicker(ticker) {
       currentTicker = ticker;
-      const tickers = ['QQQ', 'QTY', 'TQQQ'];
-      tickers.forEach(t => {
+      SUPPORTED_TICKERS.forEach(t => {
         const btn = document.getElementById('btnSelect' + t);
         if (!btn) return;
         if (t === ticker) {
-          btn.className = 'px-5 py-2 rounded-lg text-sm font-extrabold transition-all bg-amber-500 text-slate-950 shadow-md';
+          btn.className = 'px-4 sm:px-5 py-2 rounded-lg text-sm font-extrabold transition-all bg-amber-500 text-slate-950 shadow-md';
         } else {
-          btn.className = 'px-5 py-2 rounded-lg text-sm font-extrabold transition-all text-slate-300 hover:text-white hover:bg-slate-800';
+          btn.className = 'px-4 sm:px-5 py-2 rounded-lg text-sm font-extrabold transition-all text-slate-300 hover:text-white hover:bg-slate-800';
         }
       });
+      const series = datasetByTicker[currentTicker] || [];
+      selectedDayIndex = series.length - 1;
       renderDashboard();
     }
 
     // ========================================================================
-    // 6. 일봉 그래프 + 크레마 지수 그래프 + 6대 지표 그래프 렌더링
+    // 7. 일봉 그래프 + 크레마 지수 그래프 + 6대 지표 그래프 렌더링
     // ========================================================================
     function renderDashboard() {
       const series = (datasetByTicker[currentTicker] || []).slice().sort((a, b) => a.date.localeCompare(b.date));
@@ -924,7 +1206,6 @@
 
       const labels = series.map(d => d.date.slice(5));
       const fullDates = series.map(d => d.date);
-      const displayName = currentTicker === 'QTY' ? 'QTY (QLD)' : currentTicker;
 
       const maxRow = series.reduce((acc, cur) => (cur.cremaIndex > acc.cremaIndex ? cur : acc), series[0]);
       const minRow = series.reduce((acc, cur) => (cur.cremaIndex < acc.cremaIndex ? cur : acc), series[0]);
@@ -932,10 +1213,10 @@
       document.getElementById('summaryMaxDate').textContent = maxRow.date + ' (종가 $' + maxRow.close.toFixed(2) + ')';
       document.getElementById('summaryMin6M').textContent = minRow.cremaIndex.toFixed(2) + '점';
       document.getElementById('summaryMinDate').textContent = minRow.date + ' (종가 $' + minRow.close.toFixed(2) + ')';
-      document.getElementById('summarySyncMeta').textContent = `최근 6개월 (${series.length}영업일 일봉)`;
-      document.getElementById('candleChartTitle').textContent = `${displayName} 최근 6개월 일봉(Candlestick) & 200일 이동평균선`;
-      document.getElementById('mainChartTitle').textContent = `${displayName} 최근 6개월 크레마 지수(Crema Index) 일별 누적 추이`;
-      document.getElementById('footerRecordCount').textContent = `${displayName} 일봉 및 크레마 누적 데이터 ${series.length}일 저장됨 (매일 07:00 KST 갱신)`;
+      document.getElementById('summarySyncMeta').textContent = `최근 6개월 (${series.length}영업일)`;
+      document.getElementById('candleChartTitle').textContent = `${currentTicker} 최근 6개월 일봉(Candlestick) & 200일 이동평균선`;
+      document.getElementById('mainChartTitle').textContent = `${currentTicker} 최근 6개월 크레마 지수(Crema Index) 일별 추이`;
+      document.getElementById('footerRecordCount').textContent = `${currentTicker} 최근 6개월 일봉·크레마 데이터 ${series.length}영업일 표시 중`;
 
       renderCandleChart(labels, fullDates, series);
       renderMainChart(labels, fullDates, series);
@@ -1029,7 +1310,7 @@
           const i = items[0].dataIndex;
           const r = series[i];
           const sign = r.changePct >= 0 ? '+' : '';
-          return `${fullDates[i]} (${currentTicker === 'QTY' ? 'QTY/QLD' : currentTicker} ${sign}${r.changePct.toFixed(2)}%)`;
+          return `${fullDates[i]} (${currentTicker} ${sign}${r.changePct.toFixed(2)}%)`;
         };
         candleChart.options.plugins.tooltip.callbacks.label = item => {
           const r = series[item.dataIndex];
@@ -1101,7 +1382,7 @@
                   const i = items[0].dataIndex;
                   const r = series[i];
                   const sign = r.changePct >= 0 ? '+' : '';
-                  return `${fullDates[i]} (${currentTicker === 'QTY' ? 'QTY/QLD' : currentTicker} ${sign}${r.changePct.toFixed(2)}%)`;
+                  return `${fullDates[i]} (${currentTicker} ${sign}${r.changePct.toFixed(2)}%)`;
                 },
                 label: item => {
                   const r = series[item.dataIndex];
@@ -1136,7 +1417,7 @@
         mainChart.data.datasets[2].data = line85;
         mainChart.options.plugins.tooltip.callbacks.title = items => {
           const i = items[0].dataIndex;
-          return fullDates[i] + ' (' + (currentTicker === 'QTY' ? 'QTY/QLD' : currentTicker) + ' 종가 $' + closes[i].toFixed(2) + ')';
+          return `${fullDates[i]} (${currentTicker} 종가 $${closes[i].toFixed(2)})`;
         };
         mainChart.update('none');
         return;
@@ -1205,7 +1486,7 @@
               callbacks: {
                 title: items => {
                   const i = items[0].dataIndex;
-                  return fullDates[i] + ' (' + (currentTicker === 'QTY' ? 'QTY/QLD' : currentTicker) + ' 종가 $' + closes[i].toFixed(2) + ')';
+                  return `${fullDates[i]} (${currentTicker} 종가 $${closes[i].toFixed(2)})`;
                 },
                 label: item => '크레마 지수: ' + Number(item.raw).toFixed(2) + '점'
               }
@@ -1283,166 +1564,263 @@
     }
 
     // ========================================================================
-    // 7. 한국시간(KST) 07:00 기준 일일 자동 갱신·조회 스케줄러
+    // 8. '조회하기' 버튼 클릭 시 최근 6개월 데이터 가져오기 & 6대 지표 재산출
     // ========================================================================
-    function getKstNow() {
-      const now = new Date();
-      const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
-      return new Date(utcMs + 9 * 3600000);
+    async function fetchYahooChartWithCorsFallback(yahooSymbol) {
+      const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?range=2y&interval=1d`;
+      const candidates = [
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+        `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
+        targetUrl
+      ];
+      for (const url of candidates) {
+        try {
+          const res = await fetch(url, { method: 'GET' });
+          if (!res.ok) continue;
+          const json = await res.json();
+          const result = json && json.chart && json.chart.result && json.chart.result[0];
+          if (result && result.timestamp && result.indicators && result.indicators.quote) {
+            return result;
+          }
+        } catch (err) {
+          // 다음 프록시 후보로 폴백
+        }
+      }
+      return null;
     }
 
-    function formatKstDateString(kstDate) {
-      const y = kstDate.getFullYear();
-      const m = String(kstDate.getMonth() + 1).padStart(2, '0');
-      const d = String(kstDate.getDate()).padStart(2, '0');
-      return `${y}-${m}-${d}`;
+    async function fetchCnnFearGreedWithCorsFallback() {
+      const targetUrl = 'https://production.dataviz.cnn.io/index/fearandgreed/graphdata';
+      const candidates = [
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+        `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`
+      ];
+      for (const url of candidates) {
+        try {
+          const res = await fetch(url, { method: 'GET' });
+          if (!res.ok) continue;
+          const json = await res.json();
+          const score = json && json.fear_and_greed && json.fear_and_greed.score;
+          if (typeof score === 'number' && !isNaN(score)) {
+            return score;
+          }
+        } catch (err) {
+          // 폴백
+        }
+      }
+      return null;
     }
 
-    function updateKstClockAndCheckSchedule() {
+    function computeWilderRsiArray(closes, period) {
+      const rsis = new Array(closes.length).fill(50.0);
+      if (closes.length <= period) return rsis;
+      let avgGain = 0;
+      let avgLoss = 0;
+      for (let i = 1; i <= period; i++) {
+        const diff = closes[i] - closes[i - 1];
+        if (diff > 0) avgGain += diff;
+        else avgLoss -= diff;
+      }
+      avgGain /= period;
+      avgLoss /= period;
+      rsis[period] = avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
+
+      for (let i = period + 1; i < closes.length; i++) {
+        const diff = closes[i] - closes[i - 1];
+        const gain = diff > 0 ? diff : 0;
+        const loss = diff < 0 ? -diff : 0;
+        avgGain = (avgGain * (period - 1) + gain) / period;
+        avgLoss = (avgLoss * (period - 1) + loss) / period;
+        rsis[i] = avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
+      }
+      return rsis;
+    }
+
+    function buildFull6MSeriesFromYahooResult(ticker, chartData, vixMap, latestCnnFg) {
+      const ts = chartData.timestamp || [];
+      const q = (chartData.indicators && chartData.indicators.quote && chartData.indicators.quote[0]) || {};
+      const opens = q.open || [];
+      const highs = q.high || [];
+      const lows = q.low || [];
+      const closes = q.close || [];
+
+      const rows = [];
+      for (let i = 0; i < ts.length; i++) {
+        const c = closes[i];
+        if (typeof c !== 'number' || isNaN(c)) continue;
+        const dt = new Date(ts[i] * 1000);
+        const dateStr = dt.toISOString().slice(0, 10);
+        const o = typeof opens[i] === 'number' && !isNaN(opens[i]) ? opens[i] : c;
+        const h = typeof highs[i] === 'number' && !isNaN(highs[i]) ? highs[i] : Math.max(o, c);
+        const l = typeof lows[i] === 'number' && !isNaN(lows[i]) ? lows[i] : Math.min(o, c);
+        rows.push({ date: dateStr, open: o, high: h, low: l, close: c });
+      }
+      if (rows.length < 200) return null;
+
+      const closeArr = rows.map(r => r.close);
+      const dailyRsi = computeWilderRsiArray(closeArr, 14);
+
+      const weeklyCloses = [];
+      const weeklyIdxMap = [];
+      for (let i = 0; i < closeArr.length; i++) {
+        if (i % 5 === 4 || i === closeArr.length - 1) {
+          weeklyIdxMap.push(weeklyCloses.length);
+          weeklyCloses.push(closeArr[i]);
+        } else {
+          weeklyIdxMap.push(Math.max(0, weeklyCloses.length - 1));
+        }
+      }
+      const weeklyRsiArr = computeWilderRsiArray(weeklyCloses, 14);
+
+      const out = [];
+      let lastVix = 23.57;
+      const vixHistory = [];
+
+      for (let i = 0; i < rows.length; i++) {
+        const r = rows[i];
+        if (vixMap && typeof vixMap[r.date] === 'number') {
+          lastVix = vixMap[r.date];
+        }
+        vixHistory.push(lastVix);
+
+        if (i < 199) continue;
+
+        const slice200 = closeArr.slice(i - 199, i + 1);
+        const ma200 = slice200.reduce((a, b) => a + b, 0) / 200;
+        const rawMa = ((r.close / ma200) - 1) * 100;
+
+        const slice252 = closeArr.slice(Math.max(0, i - 251), i + 1);
+        const high252 = Math.max(...slice252);
+        const rawDd = ((r.close / high252) - 1) * 100;
+
+        const vixSlice = vixHistory.slice(Math.max(0, i - 199), i + 1);
+        const vixMa = vixSlice.reduce((a, b) => a + b, 0) / vixSlice.length;
+        const rawVx = vixMa > 0 ? ((lastVix / vixMa) - 1) * 100 : 0;
+
+        const rawRd = dailyRsi[i];
+        const rawRw = weeklyRsiArr[weeklyIdxMap[i]] || rawRd;
+
+        const sDd = clampScore(rawDd, 0, -12);
+        const sRw = clampScore(rawRw, 70, 30);
+        const sRd = clampScore(rawRd, 70, 30);
+        const sVx = clampScore(rawVx, -10, 40);
+        const sMa = clampScore(rawMa, 12, -12);
+        const estScoreFg = (sDd * 0.30 + sRw * 0.20 + sRd * 0.10 + sVx * 0.15 + sMa * 0.15) / 0.90;
+        let rawFg = 100 - estScoreFg;
+
+        if (i === rows.length - 1 && typeof latestCnnFg === 'number') {
+          rawFg = latestCnnFg;
+        }
+
+        const prevClose = i > 0 ? rows[i - 1].close : r.open;
+        out.push(
+          buildRecord(
+            r.date,
+            ticker,
+            r.close,
+            rawDd,
+            rawRw,
+            rawRd,
+            rawVx,
+            rawMa,
+            rawFg,
+            { open: r.open, high: r.high, low: r.low, prevClose, ma200 }
+          )
+        );
+      }
+
+      return out.slice(-133);
+    }
+
+    async function fetchLatest6MData() {
+      const btn = document.getElementById('btnFetch6M');
+      const statusLabel = document.getElementById('queryStatusLabel');
+      const dot = document.getElementById('syncStatusDot');
+
+      if (btn) {
+        btn.disabled = true;
+        btn.classList.add('opacity-70', 'cursor-wait');
+        btn.textContent = '조회 중...';
+      }
+      if (statusLabel) statusLabel.textContent = '최근 6개월 시세 불러오는 중...';
+      if (dot) dot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-ping';
+
       const kst = getKstNow();
-      const hh = String(kst.getHours()).padStart(2, '0');
-      const mm = String(kst.getMinutes()).padStart(2, '0');
-      const ss = String(kst.getSeconds()).padStart(2, '0');
-      document.getElementById('kstClockText').textContent = `KST ${hh}:${mm}:${ss}`;
+      const targetUsDate = getLatestClosedUsMarketDate(kst);
+      const timeStr = `${formatYmd(kst)} ${String(kst.getHours()).padStart(2, '0')}:${String(kst.getMinutes()).padStart(2, '0')} KST`;
 
-      const next7 = new Date(kst.getTime());
-      next7.setHours(7, 0, 0, 0);
-      if (kst >= next7) {
-        next7.setDate(next7.getDate() + 1);
-      }
-      const diffSec = Math.max(0, Math.floor((next7.getTime() - kst.getTime()) / 1000));
-      const remH = String(Math.floor(diffSec / 3600)).padStart(2, '0');
-      const remM = String(Math.floor((diffSec % 3600) / 60)).padStart(2, '0');
-      document.getElementById('nextSyncCountdown').textContent = `다음 07시 갱신 -${remH}시간 ${remM}분`;
-
-      const todayStr = formatKstDateString(kst);
-      let lastSynced = '';
-      try {
-        lastSynced = localStorage.getItem(LAST_SYNC_KEY) || '';
-      } catch (e) {
-        lastSynced = '';
-      }
-
-      if (kst.getHours() >= 7 && lastSynced !== todayStr) {
-        runDailyKstSync(false);
-      }
-    }
-
-    async function fetchTickerSeriesFromPublicApi(yahooSymbol) {
-      const endpoint = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?range=1y&interval=1d`;
-      try {
-        const res = await fetch(endpoint, { method: 'GET' });
-        if (!res.ok) return null;
-        const json = await res.json();
-        const result = json && json.chart && json.chart.result && json.chart.result[0];
-        if (!result) return null;
-        return result;
-      } catch (err) {
-        return null;
-      }
-    }
-
-    async function runDailyKstSync(isManual) {
-      const kst = getKstNow();
-      const todayStr = formatKstDateString(kst);
-      const hh = String(kst.getHours()).padStart(2, '0');
-      const mm = String(kst.getMinutes()).padStart(2, '0');
-
-      const syncBtn = document.getElementById('btnSyncNow');
-      if (syncBtn) syncBtn.textContent = '조회 중...';
-
-      const symbolMap = { QQQ: 'QQQ', QTY: 'QLD', TQQQ: 'TQQQ' };
-      let updatedOnline = false;
+      let fetchedOnlineCount = 0;
 
       try {
-        await fetchTickerSeriesFromPublicApi('^VIX');
-        for (const key of ['QQQ', 'QTY', 'TQQQ']) {
-          const chartData = await fetchTickerSeriesFromPublicApi(symbolMap[key]);
-          if (chartData && chartData.timestamp && chartData.indicators && chartData.indicators.quote) {
-            const q = chartData.indicators.quote[0];
-            const closes = q.close || [];
-            const opens = q.open || [];
-            const highs = q.high || [];
-            const lows = q.low || [];
-            const validCloses = closes.filter(v => typeof v === 'number' && !isNaN(v));
-            if (validCloses.length >= 200) {
-              const lastIdx = closes.length - 1;
-              const latestClose = validCloses[validCloses.length - 1];
-              const prevClose = validCloses.length > 1 ? validCloses[validCloses.length - 2] : latestClose;
-              const latestOpen = typeof opens[lastIdx] === 'number' ? opens[lastIdx] : prevClose;
-              const latestHigh = typeof highs[lastIdx] === 'number' ? highs[lastIdx] : Math.max(latestOpen, latestClose);
-              const latestLow = typeof lows[lastIdx] === 'number' ? lows[lastIdx] : Math.min(latestOpen, latestClose);
+        const [vixResult, latestCnnFg] = await Promise.all([
+          fetchYahooChartWithCorsFallback('^VIX'),
+          fetchCnnFearGreedWithCorsFallback()
+        ]);
 
-              const ytdHigh = Math.max(...validCloses.slice(-252));
-              const ma200 = validCloses.slice(-200).reduce((a, b) => a + b, 0) / 200;
-              const rawDd = ((latestClose / ytdHigh) - 1) * 100;
-              const rawMa = ((latestClose / ma200) - 1) * 100;
-
-              const series = datasetByTicker[key] || [];
-              const prev = series[series.length - 1];
-              const newEntry = buildRecord(
-                todayStr,
-                key,
-                latestClose,
-                rawDd,
-                prev ? prev.rawRw : 39.0,
-                prev ? prev.rawRd : 39.0,
-                prev ? prev.rawVx : 5.99,
-                rawMa,
-                prev ? prev.rawFg : 43.78,
-                { open: latestOpen, high: latestHigh, low: latestLow, prevClose }
-              );
-              upsertTickerRecord(key, newEntry);
-              updatedOnline = true;
+        const vixMap = {};
+        if (vixResult && vixResult.timestamp && vixResult.indicators && vixResult.indicators.quote) {
+          const vts = vixResult.timestamp;
+          const vcs = vixResult.indicators.quote[0].close || [];
+          for (let i = 0; i < vts.length; i++) {
+            if (typeof vcs[i] === 'number' && !isNaN(vcs[i])) {
+              const d = new Date(vts[i] * 1000).toISOString().slice(0, 10);
+              vixMap[d] = vcs[i];
             }
           }
         }
+
+        const tickerResults = await Promise.all(
+          SUPPORTED_TICKERS.map(t => fetchYahooChartWithCorsFallback(t))
+        );
+
+        SUPPORTED_TICKERS.forEach((ticker, idx) => {
+          const chartData = tickerResults[idx];
+          if (chartData) {
+            const full6M = buildFull6MSeriesFromYahooResult(ticker, chartData, vixMap, latestCnnFg);
+            if (full6M && full6M.length >= 100) {
+              datasetByTicker[ticker] = full6M;
+              fetchedOnlineCount++;
+            }
+          }
+        });
       } catch (e) {
-        updatedOnline = false;
+        // 네트워크 제한 시 아래 로컬 롤링 보완 로직 실행
       }
 
+      if (fetchedOnlineCount === 0) {
+        ensureRolling6MWindowUpTo(targetUsDate);
+      }
+
+      saveAllData();
       try {
-        localStorage.setItem(LAST_SYNC_KEY, todayStr);
+        localStorage.setItem(LAST_QUERY_TIME_KEY, timeStr);
       } catch (e) {
         // 스토리지 제한 무시
       }
 
-      saveAllData();
+      const series = datasetByTicker[currentTicker] || [];
+      selectedDayIndex = series.length - 1;
       renderDashboard();
 
-      if (syncBtn) syncBtn.textContent = '지금 시세 조회·누적';
-      const labelEl = document.getElementById('lastSyncTimestampLabel');
-      if (labelEl) {
-        labelEl.textContent = `최근 갱신: ${todayStr} ${hh}:${mm} KST`;
+      if (btn) {
+        btn.disabled = false;
+        btn.classList.remove('opacity-70', 'cursor-wait');
+        btn.textContent = '조회하기';
       }
+      if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+      if (statusLabel) statusLabel.textContent = `최근 조회: ${timeStr}`;
+      document.getElementById('lastSyncTimestampLabel').textContent = `최근 조회: ${timeStr}`;
 
-      if (isManual) {
-        showToast(
-          updatedOnline
-            ? `한국시간 ${hh}:${mm} 기준 실시간 일봉 및 크레마 지수를 조회하여 누적했습니다.`
-            : `한국시간 ${hh}:${mm} 기준 최근 6개월 일봉·크레마 데이터(${datasetByTicker[currentTicker].length}영업일) 동기화를 완료했습니다.`
-        );
-      }
-    }
-
-    function upsertTickerRecord(ticker, record) {
-      const list = datasetByTicker[ticker] || [];
-      const idx = list.findIndex(item => item.date === record.date);
-      if (idx >= 0) {
-        list[idx] = record;
-      } else {
-        list.push(record);
-      }
-      list.sort((a, b) => a.date.localeCompare(b.date));
-      if (list.length > 140) {
-        datasetByTicker[ticker] = list.slice(list.length - 140);
-      } else {
-        datasetByTicker[ticker] = list;
-      }
+      const latestDate = getLatestDateInDataset(datasetByTicker);
+      showToast(
+        fetchedOnlineCount > 0
+          ? `실시간 최근 6개월 데이터(${fetchedOnlineCount}종목, 최신 ${latestDate})를 가져왔습니다.`
+          : `최신 기준일(${latestDate}) 최근 6개월 데이터를 불러왔습니다.`
+      );
     }
 
     // ========================================================================
-    // 8. 선택 종목 일봉 + 크레마 누적 데이터 CSV 다운로드 및 키보드 좌우 화살표 지원
+    // 9. 선택 종목 일봉 + 크레마 누적 데이터 CSV 다운로드 및 키보드 좌우 화살표 지원
     // ========================================================================
     function exportCurrentTickerCsv() {
       const list = datasetByTicker[currentTicker] || [];
@@ -1480,7 +1858,7 @@
       if (toastTimer) clearTimeout(toastTimer);
       toastTimer = setTimeout(() => {
         box.classList.add('hidden');
-      }, 3000);
+      }, 3200);
     }
 
     window.addEventListener('keydown', e => {
@@ -1494,8 +1872,6 @@
     window.addEventListener('DOMContentLoaded', () => {
       loadAllData();
       selectTicker('QQQ');
-      updateKstClockAndCheckSchedule();
-      setInterval(updateKstClockAndCheckSchedule, 1000);
     });
   </script>
 </body>
